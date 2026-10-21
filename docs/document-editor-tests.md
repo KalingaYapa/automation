@@ -132,8 +132,7 @@ After the click, the test waits for `cke_button_on`, explicit bold markup coveri
 the selected word (`span[data-element=b][data-style=bold]`, `b`, or `strong`), and a
 computed font weight of at least 700. Thus the toolbar alone cannot make this test
 pass. Undo then must remove the new explicit bold markup. The flow assumes the
-standard CKEditor Undo button `a.cke_button.cke_button__undo`; verify this locator
-against the live editor if its markup differs. This test does not check saved
+confirmed CKEditor Undo button `a.cke_button.cke_button__undo`. This test does not check saved
 formatting persistence.
 
 Validation for this addition: Maven test compilation passed. A local Selenium
@@ -156,9 +155,19 @@ attempts cleanup with Undo. Once the Undo under test has been attempted, it does
 not issue another Undo: that could revert unrelated earlier document history.
 Use a disposable sandbox document, especially if autosave is enabled. This covers
 undoing a formatting edit; undoing typing, multiple edits, and Redo are separate cases.
-The Undo locator remains based on CKEditor conventions; its live HTML was not supplied.
+The supplied full Undo button HTML confirms the locator
+`a.cke_button.cke_button__undo`. The generated ID `cke_14` is deliberately avoided.
+Before clicking, the helper waits for visibility, `aria-disabled="false"`, and absence
+of the `cke_button_disabled` class. `cke_button_off` is allowed: Undo is a command,
+so that class does not mean it is disabled. These checks apply to TC_16 and to
+formatting-test cleanup.
 
 Validation: compilation passed. The local inline and iframe fixtures also passed
 restoration-snapshot comparison and the Bold-off toolbar check after Undo. This
 validates the automation helpers against simulated editor behavior, not the live
 application's undo implementation.
+
+Confirmed Undo-state update: compilation and local inline/iframe checks passed,
+including a fixture where Undo starts ARIA-disabled and becomes enabled after the
+Bold edit. The helper waits for that transition before clicking. Live application
+execution remains unverified.

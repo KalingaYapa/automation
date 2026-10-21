@@ -277,7 +277,21 @@ public class Ab_DocumentEditorPage extends BasePage {
     /** Undo only this test's formatting command; never save or reset the file. */
     public void undoHeadingBold() {
         getDriver.switchTo().defaultContent();
-        clickElement(UNDO_BUTTON);
+        WebElement undo = mywait.withMessage("Undo must be visible and enabled before clicking")
+                .until(driver -> {
+                    for (WebElement button : findElementsNow(UNDO_BUTTON)) {
+                        String classes = " " + getAttributeValue(button, "class").replaceAll("\\s+", " ") + " ";
+                        // An anchor's isEnabled() alone does not check ARIA-disabled state.
+                        // cke_button_off is a normal enabled state for this command.
+                        if (button.isDisplayed() && button.isEnabled()
+                                && "false".equalsIgnoreCase(button.getAttribute("aria-disabled"))
+                                && !classes.contains(" cke_button_disabled ")) {
+                            return button;
+                        }
+                    }
+                    return null;
+                });
+        clickElement(undo);
         mywait.withMessage("Undo should remove the heading word's explicit bold formatting")
                 .until(driver -> !isHeadingWordExplicitlyBold());
     }
