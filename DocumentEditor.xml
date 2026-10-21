@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<suite name="Document Editor Title Bar" parallel="none" thread-count="1">
+    <listeners>
+        <listener class-name="b_utilities.ExtentReportManager" />
+        <listener class-name="b_utilities.AnnotationTransfer" />
+    </listeners>
+    <parameter name="browser" value="chrome" />
+    <test name="Read-only title bar checks">
+        <classes>
+            <class name="e_testCases.Ab_DocumentEditorTC" />
+        </classes>
+    </test>
+</suite>
