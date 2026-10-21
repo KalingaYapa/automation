@@ -87,11 +87,8 @@ public class Ab_DocumentEditorPage extends BasePage {
     }
     private static final By BOLD_TEXT = By.cssSelector("span[data-element='b'][data-style='bold']");
     private static final By EDITOR_FRAMES = By.cssSelector("iframe.cke_wysiwyg_frame");
-    // The supplied icon is decorative. CKEditor stores state on its containing button.
-    private static final By BOLD_BUTTON = By.xpath(
-            "//span[contains(concat(' ', normalize-space(@class), ' '), ' cke_button__bold_icon ')]"
-            + "/ancestor::*[contains(concat(' ', normalize-space(@class), ' '), ' cke_button ')"
-            + " or @role='button' or self::button][1]");
+    // Use the stable command class, not the generated cke_23 ID or decorative icon.
+    private static final By BOLD_BUTTON = By.cssSelector("a.cke_button.cke_button__bold");
 
     private WebElement findVisibleBoldWord() {
         String expected = a_testBase.BaseClass.getConfig("boldSampleText");
@@ -174,9 +171,8 @@ public class Ab_DocumentEditorPage extends BasePage {
                 boolean enabled = button.isEnabled()
                         && !"true".equalsIgnoreCase(button.getAttribute("aria-disabled"))
                         && !classes.contains(" cke_button_disabled ");
-                String pressed = button.getAttribute("aria-pressed");
-                boolean active = pressed == null ? classes.contains(" cke_button_on ")
-                        : "true".equalsIgnoreCase(pressed);
+                boolean active = classes.contains(" cke_button_on ")
+                        && !classes.contains(" cke_button_off ");
                 if (enabled && active) {
                     return true;
                 }

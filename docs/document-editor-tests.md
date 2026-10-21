@@ -97,14 +97,12 @@ Selection is inspected in the editing context; the driver then returns to the ma
 page for the toolbar. Nested frames or a toolbar inside another frame require the
 actual frame markup before adapting these locators.
 
-The supplied Bold icon is a decorative span. Its containing button is expected to
-have the standard CKEditor class `cke_button`, role `button`, or be a native button.
-Active formatting is read from `aria-pressed=true`; if that attribute is absent,
-the standard CKEditor class `cke_button_on` is checked. The control must also be
-enabled, without `aria-disabled=true` or `cke_button_disabled`.
+The supplied full Bold button HTML confirms `a.cke_button.cke_button__bold` as
+its locator. The generated `cke_23` ID is deliberately avoided. The button is active
+when its class tokens contain `cke_button_on` and do not contain `cke_button_off`.
+It must also be enabled, without `aria-disabled=true` or `cke_button_disabled`.
+The icon span and `aria-disabled=false` alone do not establish active formatting.
 
-These parent-button state attributes were not included in the supplied HTML and
-remain an explicit integration assumption. Confirm by inspecting the Bold icon's
-parent outerHTML before and after selecting bold text. An enabled button alone
-does not prove that bold formatting is active. The live cases require authentication
-and have not been executed against the sandbox.
+The locator and state rule now match the supplied full button HTML. Editor frame
+structure and native selection behavior still require validation against the live
+sandbox. The live cases require authentication and have not been executed there.
