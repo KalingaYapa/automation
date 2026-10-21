@@ -1,6 +1,6 @@
-# Document editor title-bar tests
+# Document editor tests
 
-These 12 checks cover only the HTML supplied for the title bar. They do not click Save,
+These 14 checks cover the supplied title-bar HTML and existing bold text. They do not click Save,
 Reset File, Validate File, or Check In. Enabled state means the HTML control accepts
 interaction; it does not prove saving, resetting, validation, or check-in works.
 
@@ -18,6 +18,8 @@ interaction; it does not prove saving, resetting, validation, or check-in works.
 | TC_10 | verifyValidateButtonIsEnabled | Validate File is enabled |
 | TC_11 | verifyCheckInButtonLabel | Visible button reads Check In |
 | TC_12 | verifyCheckInButtonIsEnabled | Check In is enabled |
+| TC_13 | verifyBoldIsActiveAfterSingleClick | Caret is inside Depending and Bold is active |
+| TC_14 | verifyBoldIsActiveAfterDoubleClick | Depending is selected and Bold is active |
 
 ## Files and framework flow
 
@@ -66,7 +68,7 @@ mvn clean test -DsuiteXmlFile=DocumentEditor.xml
 ```
 
 The pom.xml explicitly ignores test failures, so BUILD SUCCESS alone is insufficient. Inspect `target/surefire-reports/testng-results.xml`, `reports/ExtentReport.html`,
-and `reports/ExcelReport.xlsx`. Expect 12 tests, no failures, and no skips; distinguish
+and `reports/ExcelReport.xlsx`. Expect 14 tests, no failures, and no skips; distinguish
 setup failures from assertion failures. Do not run the sample suite against this editor.
 
 ## Validation scope
@@ -76,3 +78,33 @@ Java integration, but cannot establish that the live editor, permissions, login,
 persistence work. The sandbox endpoint is reachable but redirects to /login without authentication.
 The application tests have not been validated against the sandbox.
 The remaining editor features will be added after their HTML and behavior are available.
+
+## Bold formatting selection checks
+
+Both cases start from the existing bold word `Depending` (`boldSampleText` in config).
+TC_13 single-clicks the word and waits for a collapsed caret inside its span.
+TC_14 double-clicks it and waits for a non-collapsed selection containing exactly
+`Depending` after trimming whitespace. This prevents a click in the wrong place
+from being reported as a successful selection. Neither case applies Bold or saves.
+
+The page object finds visible `span[data-element='b'][data-style='bold']` elements by
+the configured word, avoiding user IDs, change timestamps, session IDs and generated
+reference numbers. A duplicate matching word in the same editing context fails with
+a message requesting a paragraph-scoped locator.
+
+Inline editing and the standard CKEditor 4 `iframe.cke_wysiwyg_frame` are supported.
+Selection is inspected in the editing context; the driver then returns to the main
+page for the toolbar. Nested frames or a toolbar inside another frame require the
+actual frame markup before adapting these locators.
+
+The supplied Bold icon is a decorative span. Its containing button is expected to
+have the standard CKEditor class `cke_button`, role `button`, or be a native button.
+Active formatting is read from `aria-pressed=true`; if that attribute is absent,
+the standard CKEditor class `cke_button_on` is checked. The control must also be
+enabled, without `aria-disabled=true` or `cke_button_disabled`.
+
+These parent-button state attributes were not included in the supplied HTML and
+remain an explicit integration assumption. Confirm by inspecting the Bold icon's
+parent outerHTML before and after selecting bold text. An enabled button alone
+does not prove that bold formatting is active. The live cases require authentication
+and have not been executed against the sandbox.

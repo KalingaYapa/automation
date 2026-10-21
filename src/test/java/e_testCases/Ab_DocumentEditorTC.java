@@ -82,4 +82,20 @@ public class Ab_DocumentEditorTC extends BaseClass {
         Assert.assertTrue(editor().isCheckInButtonEnabled(),
                 "The Check In button should be enabled for the editable test document");
     }
+
+    @Test(groups = { CLASS_GROUP, "High" }, description = "TC_13 | Verify Bold is active after a single click in bold text")
+    public void verifyBoldIsActiveAfterSingleClick() {
+        Ab_DocumentEditorPage page = editor();
+        page.clickBoldWord();
+        Assert.assertTrue(page.isBoldFormattingActive(),
+                "Bold should be active with the caret inside the bold word");
+    }
+
+    @Test(groups = { CLASS_GROUP, "High" }, description = "TC_14 | Verify Bold is active after double-clicking bold text")
+    public void verifyBoldIsActiveAfterDoubleClick() {
+        Ab_DocumentEditorPage page = editor();
+        page.doubleClickBoldWord();
+        Assert.assertTrue(page.isBoldFormattingActive(),
+                "Bold should be active when the bold word is selected");
+    }
 }
