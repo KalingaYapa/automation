@@ -1,6 +1,6 @@
 # Document editor tests
 
-These 16 checks cover the supplied title-bar HTML, existing bold text, and applying Bold to a heading word. They do not click Save,
+These 18 checks cover the supplied title-bar HTML, existing bold text, and applying Bold to a heading word. They do not click Save,
 Reset File, Validate File, or Check In. Enabled state means the HTML control accepts
 interaction; it does not prove saving, resetting, validation, or check-in works.
 
@@ -22,6 +22,8 @@ interaction; it does not prove saving, resetting, validation, or check-in works.
 | TC_14 | verifyBoldIsActiveAfterDoubleClick | Depending is selected and Bold is active |
 | TC_15 | verifyApplyingBoldToHeadingWord | Selected heading word gains bold markup and Bold becomes active; Undo restores formatting |
 | TC_16 | verifyUndoRestoresHeadingFormatting | Undo restores original heading text, font weight and bold markup state; Bold is off |
+| TC_17 | verifyParagraphSelectionShowsParagraphType | Selected Element changes from heading to p |
+| TC_18 | verifyHeadingSelectionShowsHeadingType | Selected Element changes from p to heading |
 
 ## Files and framework flow
 
@@ -70,7 +72,7 @@ mvn clean test -DsuiteXmlFile=DocumentEditor.xml
 ```
 
 The pom.xml explicitly ignores test failures, so BUILD SUCCESS alone is insufficient. Inspect `target/surefire-reports/testng-results.xml`, `reports/ExtentReport.html`,
-and `reports/ExcelReport.xlsx`. Expect 16 tests, no failures, and no skips; distinguish
+and `reports/ExcelReport.xlsx`. Expect 18 tests, no failures, and no skips; distinguish
 setup failures from assertion failures. Do not run the sample suite against this editor.
 
 ## Validation scope
@@ -171,3 +173,29 @@ Confirmed Undo-state update: compilation and local inline/iframe checks passed,
 including a fixture where Undo starts ARIA-disabled and becomes enabled after the
 Bold edit. The helper waits for that transition before clicking. Live application
 execution remains unverified.
+
+## Selected Element synchronisation (TC_17 and TC_18)
+
+TC_17 first clicks the configured heading and waits for `heading`, then clicks the
+configured paragraph and asserts `p`. TC_18 establishes `p` first, then clicks the
+heading and asserts `heading`. Establishing the opposite initial state prevents an
+already-correct dropdown label from hiding a failed click. Neither case opens or
+changes the dropdown or document content.
+
+The confirmed display locator is `#selectedElmName` on the main page. This custom
+dropdown is not a native select. Editor text clicks support inline and standard
+CKEditor iframe contexts, use a native single-click on an actual text character,
+and verify a collapsed caret inside the chosen element. Explicit waits then handle
+the label update on the main page.
+
+`editorParagraphText` holds the exact supplied sentence. The provided paragraph
+HTML confirms `div[data-element='p']`; its generated `inno_ref` is deliberately
+avoided. Visible text must match exactly after trimming and removing zero-width
+spaces. Duplicate matching elements fail explicitly. These cases still require
+the existing authenticated editor setup.
+
+Validation: compilation and four local browser-fixture checks passed: heading to p
+and p to heading, each in inline and iframe editing contexts, including asynchronous
+label updates. The fixture uses the supplied paragraph and dropdown display markup.
+This verifies the helper flow against simulated behavior; the authenticated sandbox
+has not been tested.

@@ -140,4 +140,26 @@ public class Ab_DocumentEditorTC extends BaseClass {
             }
         }
     }
+
+    @Test(groups = { CLASS_GROUP, "High" }, description = "TC_17 | Verify selecting a paragraph shows p")
+    public void verifyParagraphSelectionShowsParagraphType() {
+        Ab_DocumentEditorPage page = editor();
+        page.clickTargetHeading();
+        page.waitForSelectedElementType("heading");
+        page.clickTargetParagraph();
+        page.waitForSelectedElementType("p");
+        Assert.assertEquals(page.getSelectedElementType(), "p",
+                "Selected Element should change from heading to p after clicking the paragraph");
+    }
+
+    @Test(groups = { CLASS_GROUP, "High" }, description = "TC_18 | Verify selecting a heading shows heading")
+    public void verifyHeadingSelectionShowsHeadingType() {
+        Ab_DocumentEditorPage page = editor();
+        page.clickTargetParagraph();
+        page.waitForSelectedElementType("p");
+        page.clickTargetHeading();
+        page.waitForSelectedElementType("heading");
+        Assert.assertEquals(page.getSelectedElementType(), "heading",
+                "Selected Element should change from p to heading after clicking the heading");
+    }
 }

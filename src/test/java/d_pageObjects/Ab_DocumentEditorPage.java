@@ -318,4 +318,72 @@ public class Ab_DocumentEditorPage extends BasePage {
         selectHeadingWord();
         waitForBoldFormattingState(false);
     }
+
+    private static final By SELECTED_ELEMENT_NAME = By.id("selectedElmName");
+    // Confirmed editor paragraph markup; avoid the generated inno_ref attribute.
+    private static final By PARAGRAPH = By.cssSelector("div[data-element='p']");
+
+    private WebElement locateParagraphInEditor() {
+        return locateInEditor(() -> {
+            WebElement match = null;
+            String expected = a_testBase.BaseClass.getConfig("editorParagraphText");
+            for (WebElement paragraph : findElementsNow(PARAGRAPH)) {
+                if (paragraph.isDisplayed() && paragraph.getText().replace("\u200b", "").trim().equals(expected)) {
+                    if (match != null) {
+                        throw new IllegalStateException("Multiple matching editor paragraphs; scope the locator");
+                    }
+                    match = paragraph;
+                }
+            }
+            return match;
+        });
+    }
+
+    public void clickTargetParagraph() {
+        try {
+            clickInsideEditorText(locateParagraphInEditor());
+        } finally {
+            getDriver.switchTo().defaultContent();
+        }
+    }
+
+    public void clickTargetHeading() {
+        try {
+            clickInsideEditorText(locateHeadingInEditor());
+        } finally {
+            getDriver.switchTo().defaultContent();
+        }
+    }
+
+    /** Click actual text, rather than whitespace at the centre of a wide block. */
+    private void clickInsideEditorText(WebElement element) {
+        js.executeScript("arguments[0].scrollIntoView({block:'center',inline:'nearest'});", element);
+        List<?> point = (List<?>) js.executeScript(
+                "const root=arguments[0],walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);"
+                + "let node,start;while(node=walker.nextNode()){"
+                + "start=node.textContent.search(/[^\\s\\u200b]/);if(start>=0)break;}"
+                + "if(!node)throw new Error('No visible text to click');"
+                + "const r=document.createRange();r.setStart(node,start);r.setEnd(node,start+1);"
+                + "const b=r.getClientRects()[0],h=root.getClientRects()[0];"
+                + "const cx=Math.floor((Math.max(0,h.left)+Math.min(innerWidth,h.right))/2);"
+                + "const cy=Math.floor((Math.max(0,h.top)+Math.min(innerHeight,h.bottom))/2);"
+                + "return [Math.floor(b.x+b.width/2)-cx,Math.floor(b.y+b.height/2)-cy];", element);
+        action.moveToElement(element, ((Number) point.get(0)).intValue(),
+                ((Number) point.get(1)).intValue()).click().perform();
+        mywait.until(driver -> Boolean.TRUE.equals(js.executeScript(
+                "const s=window.getSelection();return !!s && s.rangeCount>0 && s.isCollapsed"
+                + " && arguments[0].contains(s.anchorNode);", element)));
+    }
+
+    public String getSelectedElementType() {
+        getDriver.switchTo().defaultContent();
+        waitForElementToBeVisible(SELECTED_ELEMENT_NAME);
+        return getText(SELECTED_ELEMENT_NAME);
+    }
+
+    public void waitForSelectedElementType(String expectedType) {
+        getDriver.switchTo().defaultContent();
+        mywait.withMessage("Selected Element should change to " + expectedType)
+                .until(driver -> expectedType.equals(getSelectedElementType()));
+    }
 }
