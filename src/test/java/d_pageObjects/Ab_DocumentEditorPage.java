@@ -2,6 +2,7 @@ package d_pageObjects;
 
 import java.util.List;
 import org.openqa.selenium.By;
+import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
@@ -274,8 +275,8 @@ public class Ab_DocumentEditorPage extends BasePage {
         return mywait.until(driver -> isHeadingWordExplicitlyBold());
     }
 
-    /** Undo only this test's formatting command; never save or reset the file. */
-    public void undoHeadingBold() {
+    /** Native click on the confirmed Undo command, shared by editing tests. */
+    private void clickUndo() {
         getDriver.switchTo().defaultContent();
         WebElement undo = mywait.withMessage("Undo must be visible and enabled before clicking")
                 .until(driver -> {
@@ -292,6 +293,11 @@ public class Ab_DocumentEditorPage extends BasePage {
                     return null;
                 });
         clickElement(undo);
+    }
+
+    /** Undo only this test's formatting command; never save or reset the file. */
+    public void undoHeadingBold() {
+        clickUndo();
         mywait.withMessage("Undo should remove the heading word's explicit bold formatting")
                 .until(driver -> !isHeadingWordExplicitlyBold());
     }
@@ -385,5 +391,69 @@ public class Ab_DocumentEditorPage extends BasePage {
         getDriver.switchTo().defaultContent();
         mywait.withMessage("Selected Element should change to " + expectedType)
                 .until(driver -> expectedType.equals(getSelectedElementType()));
+    }
+
+    private String structureHeadingReference;
+    private static final By STRUCTURE_HEADINGS = By.cssSelector(
+            "#content-scroll li.contentBlockListItem[name='heading']");
+    private static final By DIRECT_PARAGRAPH_ROWS = By.cssSelector(
+            ":scope > div.contentBlockListItemParent > li.contentBlockListItem[name='p']");
+
+    private WebElement getTargetStructureList() {
+        if (structureHeadingReference == null) {
+            try {
+                structureHeadingReference = getAttributeValue(locateHeadingInEditor(), "inno_ref");
+                if (structureHeadingReference.isBlank()) {
+                    throw new IllegalStateException("Target heading has no inno_ref for structure scoping");
+                }
+            } finally {
+                getDriver.switchTo().defaultContent();
+            }
+        }
+        getDriver.switchTo().defaultContent();
+        return mywait.until(driver -> {
+            for (WebElement row : findElementsNow(STRUCTURE_HEADINGS)) {
+                if (structureHeadingReference.equals(row.getAttribute("id")) && row.isDisplayed()) {
+                    return row.findElement(By.xpath(
+                            "ancestor::ul[contains(concat(' ',normalize-space(@class),' '), ' contentBlockList ')][1]"));
+                }
+            }
+            return null;
+        });
+    }
+
+    public int getParagraphCountInTargetSection() {
+        return getTargetStructureList().findElements(DIRECT_PARAGRAPH_ROWS).size();
+    }
+
+    public void waitForParagraphCountInTargetSection(int expectedCount) {
+        mywait.withMessage("Target section should have " + expectedCount + " paragraph rows")
+                .ignoring(org.openqa.selenium.StaleElementReferenceException.class)
+                .until(driver -> getParagraphCountInTargetSection() == expectedCount);
+    }
+
+    /** Set a collapsed caret at the configured text boundary, then send native Enter. */
+    public void splitTargetParagraph() {
+        try {
+            WebElement paragraph = locateParagraphInEditor();
+            clickInsideEditorText(paragraph);
+            js.executeScript(
+                    "const root=arguments[0],text=arguments[1];"
+                    + "const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);"
+                    + "let n,match=null;while(n=w.nextNode()){const i=n.textContent.indexOf(text);"
+                    + "if(i>=0){if(match)throw new Error('Split boundary is ambiguous');match={n:n,i:i};}}"
+                    + "if(!match)throw new Error('Split boundary not found');"
+                    + "const r=document.createRange();r.setStart(match.n,match.i);r.collapse(true);"
+                    + "const s=window.getSelection();s.removeAllRanges();s.addRange(r);",
+                    paragraph, a_testBase.BaseClass.getConfig("paragraphSplitBefore"));
+            action.sendKeys(Keys.ENTER).perform();
+        } finally {
+            getDriver.switchTo().defaultContent();
+        }
+    }
+
+    public void undoParagraphSplit(int originalCount) {
+        clickUndo();
+        waitForParagraphCountInTargetSection(originalCount);
     }
 }

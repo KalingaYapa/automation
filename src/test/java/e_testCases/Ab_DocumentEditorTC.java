@@ -162,4 +162,25 @@ public class Ab_DocumentEditorTC extends BaseClass {
         Assert.assertEquals(page.getSelectedElementType(), "heading",
                 "Selected Element should change from p to heading after clicking the heading");
     }
+
+    @Test(groups = { CLASS_GROUP, "High" }, description = "TC_19 | Verify Enter increases the section paragraph count by one")
+    public void verifyEnterIncreasesParagraphCount() {
+        Ab_DocumentEditorPage page = editor();
+        int originalCount = page.getParagraphCountInTargetSection();
+        if (originalCount < 1) {
+            throw new IllegalStateException("Precondition: expand the target section containing the original paragraph");
+        }
+        boolean splitSent = false;
+        try {
+            page.splitTargetParagraph();
+            splitSent = true;
+            page.waitForParagraphCountInTargetSection(originalCount + 1);
+            Assert.assertEquals(page.getParagraphCountInTargetSection(), originalCount + 1,
+                    "Enter should add one paragraph row in the target section's Document Structure");
+        } finally {
+            if (splitSent && page.getParagraphCountInTargetSection() != originalCount) {
+                page.undoParagraphSplit(originalCount);
+            }
+        }
+    }
 }

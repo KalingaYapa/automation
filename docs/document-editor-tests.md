@@ -1,6 +1,6 @@
 # Document editor tests
 
-These 18 checks cover the supplied title-bar HTML, existing bold text, and applying Bold to a heading word. They do not click Save,
+These 19 checks cover the supplied title-bar HTML, existing bold text, and applying Bold to a heading word. They do not click Save,
 Reset File, Validate File, or Check In. Enabled state means the HTML control accepts
 interaction; it does not prove saving, resetting, validation, or check-in works.
 
@@ -24,6 +24,7 @@ interaction; it does not prove saving, resetting, validation, or check-in works.
 | TC_16 | verifyUndoRestoresHeadingFormatting | Undo restores original heading text, font weight and bold markup state; Bold is off |
 | TC_17 | verifyParagraphSelectionShowsParagraphType | Selected Element changes from heading to p |
 | TC_18 | verifyHeadingSelectionShowsHeadingType | Selected Element changes from p to heading |
+| TC_19 | verifyEnterIncreasesParagraphCount | Enter increases the target section paragraph-row count by one |
 
 ## Files and framework flow
 
@@ -72,7 +73,7 @@ mvn clean test -DsuiteXmlFile=DocumentEditor.xml
 ```
 
 The pom.xml explicitly ignores test failures, so BUILD SUCCESS alone is insufficient. Inspect `target/surefire-reports/testng-results.xml`, `reports/ExtentReport.html`,
-and `reports/ExcelReport.xlsx`. Expect 18 tests, no failures, and no skips; distinguish
+and `reports/ExcelReport.xlsx`. Expect 19 tests, no failures, and no skips; distinguish
 setup failures from assertion failures. Do not run the sample suite against this editor.
 
 ## Validation scope
@@ -199,3 +200,37 @@ and p to heading, each in inline and iframe editing contexts, including asynchro
 label updates. The fixture uses the supplied paragraph and dropdown display markup.
 This verifies the helper flow against simulated behavior; the authenticated sandbox
 has not been tested.
+
+## Paragraph split count (TC_19)
+
+This case intentionally verifies only Document Structure counts. It records the
+number of direct paragraph rows in the target section as N, places the caret before
+`paragraphSplitBefore=By this action`, sends a native Enter, waits for N+1, and
+asserts that count. It does not check the resulting paragraph texts or their row
+identities. A section with only one paragraph changes 1 to 2; existing other
+paragraphs are included in the baseline, so the general expectation is N to N+1.
+
+The supplied structure HTML confirms `#content-scroll`, `li.contentBlockListItem`,
+and `name='p'`. The configured heading's `inno_ref` is matched to the heading li ID
+(not the duplicate wrapper ID) to locate its nearest `ul.contentBlockList`. Only
+`:scope > div.contentBlockListItemParent > li.contentBlockListItem[name='p']`
+entries are counted. Nested subsections/list paragraphs are excluded; the section
+must be expanded and the original paragraph must still contain the configured
+full sentence before the test. The configured heading and paragraph must belong
+to the same section.
+
+Caret placement uses the browser Selection/Range API after a native click focuses
+the paragraph. Enter is sent as a WebDriver key action, rather than inserting markup
+with JavaScript. The split boundary must occur in one text node; a boundary spanning
+multiple nested inline nodes needs an adapted caret locator.
+
+Cleanup clicks Undo only when Enter was sent and the count changed, then waits for
+the baseline count. It does not blindly undo when no structure change was observed.
+No Save or Reset is clicked; use a disposable document if the application autosaves.
+The count-only assertion cannot prove the text was preserved or the split occurred
+at the correct position. Those are deliberately outside this test's requested scope.
+
+Validation: compilation passed. Local inline and iframe fixtures passed paragraph
+count transitions 2 to 3 to 2, including cleanup, with a nested paragraph excluded
+from the section count. The fixture simulates Enter and structure synchronization;
+this does not verify the authenticated application's split behavior.
