@@ -1,6 +1,6 @@
 # Document editor tests
 
-These 15 checks cover the supplied title-bar HTML, existing bold text, and applying Bold to a heading word. They do not click Save,
+These 16 checks cover the supplied title-bar HTML, existing bold text, and applying Bold to a heading word. They do not click Save,
 Reset File, Validate File, or Check In. Enabled state means the HTML control accepts
 interaction; it does not prove saving, resetting, validation, or check-in works.
 
@@ -21,6 +21,7 @@ interaction; it does not prove saving, resetting, validation, or check-in works.
 | TC_13 | verifyBoldIsActiveAfterSingleClick | Caret is inside Depending and Bold is active |
 | TC_14 | verifyBoldIsActiveAfterDoubleClick | Depending is selected and Bold is active |
 | TC_15 | verifyApplyingBoldToHeadingWord | Selected heading word gains bold markup and Bold becomes active; Undo restores formatting |
+| TC_16 | verifyUndoRestoresHeadingFormatting | Undo restores original heading text, font weight and bold markup state; Bold is off |
 
 ## Files and framework flow
 
@@ -69,7 +70,7 @@ mvn clean test -DsuiteXmlFile=DocumentEditor.xml
 ```
 
 The pom.xml explicitly ignores test failures, so BUILD SUCCESS alone is insufficient. Inspect `target/surefire-reports/testng-results.xml`, `reports/ExtentReport.html`,
-and `reports/ExcelReport.xlsx`. Expect 15 tests, no failures, and no skips; distinguish
+and `reports/ExcelReport.xlsx`. Expect 16 tests, no failures, and no skips; distinguish
 setup failures from assertion failures. Do not run the sample suite against this editor.
 
 ## Validation scope
@@ -140,3 +141,24 @@ fixture exercised the actual page-object flow in both inline and standard iframe
 editing contexts: exact word selection, off-state precondition, Bold click, toolbar
 and document-format checks, and Undo all passed. This fixture simulates toolbar
 behavior; it does not establish that the authenticated application works.
+
+## Undo operation (TC_16)
+
+This independent case selects `headingWord`, requires Bold off, and captures the
+heading's text, the word's computed font weight, and its explicit bold-markup state.
+It applies Bold and verifies that the edit actually took effect before testing Undo.
+It then clicks the standard CKEditor Undo button, waits for the added bold markup
+to disappear, reselects the word and waits for Bold off. The assertion compares the
+post-Undo text and formatting snapshot with the original snapshot.
+
+The case never saves or resets the file. If setup fails after applying Bold, it
+attempts cleanup with Undo. Once the Undo under test has been attempted, it does
+not issue another Undo: that could revert unrelated earlier document history.
+Use a disposable sandbox document, especially if autosave is enabled. This covers
+undoing a formatting edit; undoing typing, multiple edits, and Redo are separate cases.
+The Undo locator remains based on CKEditor conventions; its live HTML was not supplied.
+
+Validation: compilation passed. The local inline and iframe fixtures also passed
+restoration-snapshot comparison and the Bold-off toolbar check after Undo. This
+validates the automation helpers against simulated editor behavior, not the live
+application's undo implementation.

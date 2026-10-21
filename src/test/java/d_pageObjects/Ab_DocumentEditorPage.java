@@ -165,6 +165,10 @@ public class Ab_DocumentEditorPage extends BasePage {
 
     /** Checks active formatting, rather than merely whether Bold can be clicked. */
     public boolean isBoldFormattingActive() {
+        return waitForBoldFormattingState(true);
+    }
+
+    private boolean waitForBoldFormattingState(boolean expectedActive) {
         getDriver.switchTo().defaultContent();
         return mywait.until(driver -> {
             for (WebElement button : findElementsNow(BOLD_BUTTON)) {
@@ -175,8 +179,9 @@ public class Ab_DocumentEditorPage extends BasePage {
                 boolean enabled = button.isEnabled()
                         && !"true".equalsIgnoreCase(button.getAttribute("aria-disabled"))
                         && !classes.contains(" cke_button_disabled ");
-                boolean active = classes.contains(" cke_button_on ")
-                        && !classes.contains(" cke_button_off ");
+                String expected = expectedActive ? " cke_button_on " : " cke_button_off ";
+                String opposite = expectedActive ? " cke_button_off " : " cke_button_on ";
+                boolean active = classes.contains(expected) && !classes.contains(opposite);
                 if (enabled && active) {
                     return true;
                 }
@@ -239,19 +244,7 @@ public class Ab_DocumentEditorPage extends BasePage {
     }
 
     public void requireHeadingBoldIsOff() {
-        getDriver.switchTo().defaultContent();
-        mywait.withMessage("Precondition: the selected heading word must have Bold off")
-                .until(driver -> {
-                    for (WebElement button : findElementsNow(BOLD_BUTTON)) {
-                        if (button.isDisplayed() && button.isEnabled()
-                                && !"true".equals(button.getAttribute("aria-disabled"))) {
-                            String classes = " " + getAttributeValue(button, "class") + " ";
-                            return classes.contains(" cke_button_off ")
-                                    && !classes.contains(" cke_button_on ");
-                        }
-                    }
-                    return false;
-                });
+        waitForBoldFormattingState(false);
         if (isHeadingWordExplicitlyBold()) {
             throw new IllegalStateException("Precondition: heading word already has explicit bold markup");
         }
@@ -285,7 +278,30 @@ public class Ab_DocumentEditorPage extends BasePage {
     public void undoHeadingBold() {
         getDriver.switchTo().defaultContent();
         clickElement(UNDO_BUTTON);
-        mywait.withMessage("Cleanup: undo should remove the heading word's explicit bold formatting")
+        mywait.withMessage("Undo should remove the heading word's explicit bold formatting")
                 .until(driver -> !isHeadingWordExplicitlyBold());
+    }
+
+    /** Capture text, rendered weight and explicit formatting for before/after comparison. */
+    @SuppressWarnings("unchecked")
+    public List<String> getHeadingWordFormattingSnapshot() {
+        try {
+            WebElement heading = locateHeadingInEditor();
+            return (List<String>) js.executeScript(FIND_HEADING_WORD
+                    + "const bold=node.parentElement.closest('[data-element=\"b\"][data-style=\"bold\"],b,strong');"
+                    + "return [root.textContent.replace(/\\u200b/g,'').trim(),"
+                    + "getComputedStyle(node.parentElement).fontWeight,"
+                    + "String(!!bold && root.contains(bold))];",
+                    heading, a_testBase.BaseClass.getConfig("headingWord"));
+        } finally {
+            getDriver.switchTo().defaultContent();
+        }
+    }
+
+    /** Undo the latest Bold edit and reselect its word to check toolbar synchronisation. */
+    public void undoHeadingBoldAndWaitForInactiveState() {
+        undoHeadingBold();
+        selectHeadingWord();
+        waitForBoldFormattingState(false);
     }
 }

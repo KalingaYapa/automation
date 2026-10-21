@@ -116,4 +116,28 @@ public class Ab_DocumentEditorTC extends BaseClass {
             }
         }
     }
+
+    @Test(groups = { CLASS_GROUP, "High" }, description = "TC_16 | Verify Undo restores heading formatting after applying Bold")
+    public void verifyUndoRestoresHeadingFormatting() {
+        Ab_DocumentEditorPage page = editor();
+        page.selectHeadingWord();
+        page.requireHeadingBoldIsOff();
+        java.util.List<String> original = page.getHeadingWordFormattingSnapshot();
+        boolean applied = false;
+        boolean undoAttempted = false;
+        try {
+            page.applyBoldToSelection();
+            applied = true;
+            page.waitForHeadingWordToBecomeBold();
+            // Never issue a second Undo if the operation being tested fails.
+            undoAttempted = true;
+            page.undoHeadingBoldAndWaitForInactiveState();
+            Assert.assertEquals(page.getHeadingWordFormattingSnapshot(), original,
+                    "Undo should restore heading text, font weight and explicit bold formatting");
+        } finally {
+            if (applied && !undoAttempted) {
+                page.undoHeadingBold();
+            }
+        }
+    }
 }
