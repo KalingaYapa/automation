@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+
+<!--
+  Master suite - runs every test class in the e_testCases package.
+
+  parallel="methods" with thread-count="4" means four browsers run at a time,
+  each with its own WebDriver and its own session.
+
+  Groups are the test class name and the priority from the manual sheet:
+     Aa_SampleTC ...                 - one group per test class
+     Highest | High | Medium | Low   - taken from the Priority column
+
+  Run everything   : mvn clean test
+  Run one class    : mvn clean test -Dgroups=Aa_SampleTC
+  Run by priority  : mvn clean test -Dgroups=Highest
+
+  Add a class: add one <include> line below. The <packages> entry picks up
+  every class in e_testCases, and the group keeps the run selectable.
+-->
+<suite name="Automation Suite" parallel="methods" thread-count="4" verbose="1"
+	configfailurepolicy="continue">
+
+	<listeners>
+		<listener class-name="b_utilities.ExtentReportManager" />
+		<listener class-name="b_utilities.AnnotationTransfer" />
+	</listeners>
+
+	<parameter name="browser" value="chrome" />
+
+	<test name="Regression">
+		<groups>
+			<run>
+				<include name="Aa_SampleTC" />
+			</run>
+		</groups>
+		<packages>
+			<package name="e_testCases" />
+		</packages>
+	</test>
+
+</suite>

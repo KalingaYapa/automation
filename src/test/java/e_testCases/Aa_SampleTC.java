@@ -1,0 +1,81 @@
+package e_testCases;
+
+import java.util.Arrays;
+
+import org.testng.Assert;
+import org.testng.annotations.Test;
+
+import a_testBase.BaseClass;
+import b_utilities.ReusableMethods;
+import d_pageObjects.Aa_SamplePage;
+
+/**
+ * TEMPLATE test class - copy it, rename it, delete this one.
+ *
+ * <p>
+ * Conventions every test class in this framework follows:
+ * </p>
+ * <ol>
+ * <li><b>Extends {@link BaseClass}</b>, so the browser, the config and the
+ * reports come for free.</li>
+ * <li><b>Named {@code Xx_<Screen>TC}</b> and uses only its own page object,
+ * {@code Xx_<Screen>Page}.</li>
+ * <li><b>No page object in a field.</b> The suite runs methods in parallel, so
+ * each test builds its own through a small private helper.</li>
+ * <li><b>Two groups per test</b>: the class name and the priority from the
+ * manual test case sheet. No {@code priority=} attribute, no smoke / sanity /
+ * regression groups.</li>
+ * <li><b>The description carries the manual test case ID</b>, written
+ * {@code "TC_01 | <title from the sheet>"}. Both reports key on it.</li>
+ * <li><b>The method name is the Automation ID</b> written back into the sheet,
+ * so the sheet and the run results reconcile with a straight lookup.</li>
+ * <li><b>One action and one assertion per test</b>, with a failure message
+ * that says what was expected.</li>
+ * </ol>
+ */
+public class Aa_SampleTC extends BaseClass {
+
+	private static final String CLASS_GROUP = "Aa_SampleTC";
+	private static final String HIGHEST = "Highest";
+	private static final String HIGH = "High";
+	private static final String MEDIUM = "Medium";
+
+	/** Every test starts from a freshly opened screen. */
+	private Aa_SamplePage samplePage() {
+		return new Aa_SamplePage(getDriver()).open();
+	}
+
+	@Test(groups = { CLASS_GROUP, HIGHEST }, description = "TC_01 | Verify the screen is displayed on opening it")
+	public void verifyScreenIsDisplayed() {
+		Assert.assertTrue(samplePage().isTableDisplayed(), "The results table should be displayed on the screen");
+	}
+
+	@Test(groups = { CLASS_GROUP, MEDIUM }, description = "TC_02 | Verify the screen heading is displayed")
+	public void verifyScreenHeadingIsDisplayed() {
+		Assert.assertEquals(samplePage().getHeading(), Aa_SamplePage.HEADING,
+				"The heading should read " + Aa_SamplePage.HEADING);
+	}
+
+	@Test(groups = { CLASS_GROUP, HIGH }, description = "TC_03 | Verify the table column headers are displayed in order")
+	public void verifyTableColumnHeaders() {
+		Assert.assertEquals(samplePage().getColumnHeaders(), Arrays.asList("ID", "Name", "Status", "Created On"),
+				"The table should display its four column headers in order");
+	}
+
+	@Test(groups = { CLASS_GROUP, HIGH }, description = "TC_04 | Verify searching a value returns only the matching rows")
+	public void verifySearchReturnsMatchingRows() {
+		Aa_SamplePage page = samplePage();
+		String term = getConfig("sampleSearchValue");
+		page.search(term);
+		Assert.assertTrue(page.getRowCount() > 0 && ReusableMethods.allContainIgnoreCase(page.getColumnValues(2), term),
+				"Every row returned should contain the searched value");
+	}
+
+	@Test(groups = { CLASS_GROUP, HIGH }, description = "TC_05 | Verify the no-result message for a value that does not exist")
+	public void verifyNoResultMessageForUnknownValue() {
+		Aa_SamplePage page = samplePage();
+		page.search(getConfig("sampleInvalidSearchValue"));
+		Assert.assertEquals(page.getEmptyTableMessage(), Aa_SamplePage.NO_RESULT_MESSAGE,
+				"The no-result message should be displayed for a value that does not exist");
+	}
+}
