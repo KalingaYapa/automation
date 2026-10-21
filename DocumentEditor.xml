@@ -6,7 +6,7 @@
         <listener class-name="b_utilities.AnnotationTransfer" />
     </listeners>
     <parameter name="browser" value="chrome" />
-    <test name="Read-only editor checks">
+    <test name="Editor checks">
         <classes>
             <class name="e_testCases.Ab_DocumentEditorTC" />
         </classes>

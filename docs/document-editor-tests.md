@@ -1,6 +1,6 @@
 # Document editor tests
 
-These 14 checks cover the supplied title-bar HTML and existing bold text. They do not click Save,
+These 15 checks cover the supplied title-bar HTML, existing bold text, and applying Bold to a heading word. They do not click Save,
 Reset File, Validate File, or Check In. Enabled state means the HTML control accepts
 interaction; it does not prove saving, resetting, validation, or check-in works.
 
@@ -20,6 +20,7 @@ interaction; it does not prove saving, resetting, validation, or check-in works.
 | TC_12 | verifyCheckInButtonIsEnabled | Check In is enabled |
 | TC_13 | verifyBoldIsActiveAfterSingleClick | Caret is inside Depending and Bold is active |
 | TC_14 | verifyBoldIsActiveAfterDoubleClick | Depending is selected and Bold is active |
+| TC_15 | verifyApplyingBoldToHeadingWord | Selected heading word gains bold markup and Bold becomes active; Undo restores formatting |
 
 ## Files and framework flow
 
@@ -68,7 +69,7 @@ mvn clean test -DsuiteXmlFile=DocumentEditor.xml
 ```
 
 The pom.xml explicitly ignores test failures, so BUILD SUCCESS alone is insufficient. Inspect `target/surefire-reports/testng-results.xml`, `reports/ExtentReport.html`,
-and `reports/ExcelReport.xlsx`. Expect 14 tests, no failures, and no skips; distinguish
+and `reports/ExcelReport.xlsx`. Expect 15 tests, no failures, and no skips; distinguish
 setup failures from assertion failures. Do not run the sample suite against this editor.
 
 ## Validation scope
@@ -106,3 +107,36 @@ The icon span and `aria-disabled=false` alone do not establish active formatting
 The locator and state rule now match the supplied full button HTML. Editor frame
 structure and native selection behavior still require validation against the live
 sandbox. The live cases require authentication and have not been executed there.
+
+## Applying Bold to the heading (TC_15)
+
+Use a disposable sandbox document: this test changes formatting temporarily, then
+uses the editor's Undo button. It never clicks Save. Confirm whether your application
+autosaves before running editing tests against shared documents; Undo cannot roll
+back server-side history or notifications.
+
+`editorHeadingText` identifies the supplied heading without its generated reference
+number. `headingWord=Transmit` specifies the exact word to select. A single click
+only places a caret, so it does not reliably format an existing word. The test uses
+a native double-click at the word's measured screen position and verifies that the
+selected text is exactly the configured word.
+
+Before clicking Bold, the test requires `cke_button_off` and no explicit bold
+markup on the word. A heading can already look bold due to CSS, so appearance alone
+is not the baseline. If the toolbar is already on, the test fails its precondition
+without clicking Bold; choose a genuinely unformatted word/fixture instead of silently
+toggling the existing formatting off.
+
+After the click, the test waits for `cke_button_on`, explicit bold markup covering
+the selected word (`span[data-element=b][data-style=bold]`, `b`, or `strong`), and a
+computed font weight of at least 700. Thus the toolbar alone cannot make this test
+pass. Undo then must remove the new explicit bold markup. The flow assumes the
+standard CKEditor Undo button `a.cke_button.cke_button__undo`; verify this locator
+against the live editor if its markup differs. This test does not check saved
+formatting persistence.
+
+Validation for this addition: Maven test compilation passed. A local Selenium
+fixture exercised the actual page-object flow in both inline and standard iframe
+editing contexts: exact word selection, off-state precondition, Bold click, toolbar
+and document-format checks, and Undo all passed. This fixture simulates toolbar
+behavior; it does not establish that the authenticated application works.

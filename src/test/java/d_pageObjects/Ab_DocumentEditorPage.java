@@ -7,7 +7,7 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import c_basePage.BasePage;
 
-/** Read-only editor checks; no document-changing actions. */
+/** Editor checks and focused formatting actions. */
 public class Ab_DocumentEditorPage extends BasePage {
     @FindBy(css = "#titlebarFileName > span:first-child")
     private WebElement documentTitle;
@@ -107,16 +107,20 @@ public class Ab_DocumentEditorPage extends BasePage {
 
     /** Supports inline CKEditor and the standard CKEditor 4 editing iframe. */
     private WebElement locateBoldWordInEditor() {
+        return locateInEditor(this::findVisibleBoldWord);
+    }
+
+    private WebElement locateInEditor(java.util.function.Supplier<WebElement> findElement) {
         return mywait.until(driver -> {
             driver.switchTo().defaultContent();
-            WebElement word = findVisibleBoldWord();
+            WebElement word = findElement.get();
             if (word != null) {
                 return word;
             }
             for (WebElement frame : findElementsNow(EDITOR_FRAMES)) {
                 if (frame.isDisplayed()) {
                     driver.switchTo().frame(frame);
-                    word = findVisibleBoldWord();
+                    word = findElement.get();
                     if (word != null) {
                         return word;
                     }
@@ -179,5 +183,109 @@ public class Ab_DocumentEditorPage extends BasePage {
             }
             return false;
         });
+    }
+
+    private static final By HEADING = By.cssSelector("div[data-element='heading']");
+    private static final By UNDO_BUTTON = By.cssSelector("a.cke_button.cke_button__undo");
+    private static final String FIND_HEADING_WORD =
+            "const root=arguments[0], word=arguments[1];"
+            + "const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);"
+            + "let node, match=null; while(node=walker.nextNode()){"
+            + "const start=node.textContent.indexOf(word); if(start>=0){"
+            + "if(match) throw new Error('Heading word is ambiguous');"
+            + "match={node:node,start:start};}}"
+            + "if(!match) throw new Error('Heading word was not found');"
+            + "node=match.node;";
+
+    private WebElement locateHeadingInEditor() {
+        return locateInEditor(() -> {
+            WebElement match = null;
+            for (WebElement heading : findElementsNow(HEADING)) {
+                if (heading.isDisplayed() && heading.getText().replace("\u200b", "").trim()
+                        .equals(a_testBase.BaseClass.getConfig("editorHeadingText"))) {
+                    if (match != null) {
+                        throw new IllegalStateException("Multiple matching editor headings");
+                    }
+                    match = heading;
+                }
+            }
+            return match;
+        });
+    }
+
+    /** Native double-click at the configured word, rather than the heading's centre. */
+    public void selectHeadingWord() {
+        try {
+            WebElement heading = locateHeadingInEditor();
+            js.executeScript("arguments[0].scrollIntoView({block:'center',inline:'nearest'});", heading);
+            List<?> point = (List<?>) js.executeScript(FIND_HEADING_WORD
+                    + "const r=document.createRange();r.setStart(node,match.start);"
+                    + "r.setEnd(node,match.start+word.length);const b=r.getClientRects()[0];"
+                    + "const h=root.getClientRects()[0];"
+                    + "const cx=Math.floor((Math.max(0,h.left)+Math.min(innerWidth,h.right))/2);"
+                    + "const cy=Math.floor((Math.max(0,h.top)+Math.min(innerHeight,h.bottom))/2);"
+                    + "return [Math.floor(b.x+b.width/2)-cx,Math.floor(b.y+b.height/2)-cy];",
+                    heading, a_testBase.BaseClass.getConfig("headingWord"));
+            action.moveToElement(heading, ((Number) point.get(0)).intValue(),
+                    ((Number) point.get(1)).intValue()).doubleClick().perform();
+            mywait.until(driver -> Boolean.TRUE.equals(js.executeScript(
+                    "const s=window.getSelection();return !!s && !s.isCollapsed"
+                    + " && arguments[0].contains(s.anchorNode) && arguments[0].contains(s.focusNode)"
+                    + " && s.toString().trim()===arguments[1];",
+                    heading, a_testBase.BaseClass.getConfig("headingWord"))));
+        } finally {
+            getDriver.switchTo().defaultContent();
+        }
+    }
+
+    public void requireHeadingBoldIsOff() {
+        getDriver.switchTo().defaultContent();
+        mywait.withMessage("Precondition: the selected heading word must have Bold off")
+                .until(driver -> {
+                    for (WebElement button : findElementsNow(BOLD_BUTTON)) {
+                        if (button.isDisplayed() && button.isEnabled()
+                                && !"true".equals(button.getAttribute("aria-disabled"))) {
+                            String classes = " " + getAttributeValue(button, "class") + " ";
+                            return classes.contains(" cke_button_off ")
+                                    && !classes.contains(" cke_button_on ");
+                        }
+                    }
+                    return false;
+                });
+        if (isHeadingWordExplicitlyBold()) {
+            throw new IllegalStateException("Precondition: heading word already has explicit bold markup");
+        }
+    }
+
+    /** Verify document markup and rendered font weight independently of the toolbar. */
+    public boolean isHeadingWordExplicitlyBold() {
+        try {
+            WebElement heading = locateHeadingInEditor();
+            return Boolean.TRUE.equals(js.executeScript(FIND_HEADING_WORD
+                    + "const bold=node.parentElement.closest('[data-element=\"b\"][data-style=\"bold\"],b,strong');"
+                    + "return !!bold && root.contains(bold)"
+                    + " && parseInt(getComputedStyle(node.parentElement).fontWeight,10)>=700;",
+                    heading, a_testBase.BaseClass.getConfig("headingWord")));
+        } finally {
+            getDriver.switchTo().defaultContent();
+        }
+    }
+
+    public void applyBoldToSelection() {
+        getDriver.switchTo().defaultContent();
+        clickElement(BOLD_BUTTON);
+    }
+
+    public boolean waitForHeadingWordToBecomeBold() {
+        isBoldFormattingActive();
+        return mywait.until(driver -> isHeadingWordExplicitlyBold());
+    }
+
+    /** Undo only this test's formatting command; never save or reset the file. */
+    public void undoHeadingBold() {
+        getDriver.switchTo().defaultContent();
+        clickElement(UNDO_BUTTON);
+        mywait.withMessage("Cleanup: undo should remove the heading word's explicit bold formatting")
+                .until(driver -> !isHeadingWordExplicitlyBold());
     }
 }

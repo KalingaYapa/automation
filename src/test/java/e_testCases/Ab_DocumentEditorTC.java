@@ -98,4 +98,22 @@ public class Ab_DocumentEditorTC extends BaseClass {
         Assert.assertTrue(page.isBoldFormattingActive(),
                 "Bold should be active when the bold word is selected");
     }
+
+    @Test(groups = { CLASS_GROUP, "High" }, description = "TC_15 | Verify applying Bold to a selected heading word")
+    public void verifyApplyingBoldToHeadingWord() {
+        Ab_DocumentEditorPage page = editor();
+        page.selectHeadingWord();
+        page.requireHeadingBoldIsOff();
+        boolean applied = false;
+        try {
+            page.applyBoldToSelection();
+            applied = true;
+            Assert.assertTrue(page.waitForHeadingWordToBecomeBold(),
+                    "Bold should be active and the selected heading word should have rendered bold markup");
+        } finally {
+            if (applied) {
+                page.undoHeadingBold();
+            }
+        }
+    }
 }
