@@ -155,6 +155,7 @@ public class Ab_DocumentEditorTC extends BaseClass {
         }
     }
 
+*/
     @Test(groups = { CLASS_GROUP, "High" }, description = "TC_17 | Verify selecting a paragraph shows p")
     public void verifyParagraphSelectionShowsParagraphType() {
         Ab_DocumentEditorPage page = editor();
@@ -176,7 +177,6 @@ public class Ab_DocumentEditorTC extends BaseClass {
         Assert.assertEquals(page.getSelectedElementType(), "heading",
                 "Selected Element should change from p to heading after clicking the heading");
     }
-*/
     @Test(groups = { CLASS_GROUP, "High" }, description = "TC_19 | Verify Enter increases the section paragraph count by one")
     public void verifyEnterIncreasesParagraphCount() {
         Ab_DocumentEditorPage page = editor();

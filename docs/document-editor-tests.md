@@ -187,8 +187,11 @@ changes the dropdown or document content.
 
 The confirmed display locator is `#selectedElmName` on the main page. This custom
 dropdown is not a native select. Editor text clicks support inline and standard
-CKEditor iframe contexts, use a native single-click on an actual text character,
-and verify a collapsed caret inside the chosen element. Explicit waits then handle
+CKEditor iframe contexts, use a native single-click at the centre of a configured plain-text word,
+and verify a collapsed caret directly inside the chosen block. Nested formatting
+spans are excluded: clicking the bold “Close” would select `b`, not `p`.
+`paragraphSelectionWord=flight` and `headingSelectionWord=Flight` avoid formatted
+children and the boundary beside the heading number. Explicit waits then handle
 the label update on the main page.
 
 `editorParagraphText` holds the exact supplied sentence. The provided paragraph
@@ -348,10 +351,22 @@ username/password and the portal URL configured locally as described above.
 
 The remote `af72684` commit disabled TC_01–TC_18 while this fix was in progress.
 It was preserved during integration, with only the requested TC_13–TC_15 re-enabled.
-TC_01–TC_12 and TC_16–TC_18 remain commented out; TC_19 remains enabled.
+TC_01–TC_12 and TC_16 remain commented out; TC_17–TC_19 are enabled.
 `BoldTests.xml` selects the three enabled Bold methods explicitly.
 
 After integrating the remote test-comment changes and re-enabling the requested
 methods, the actual committed `BoldTests.xml` was run against the sandbox with the
 normal report listeners: **3 passed, 0 failed, 0 skipped**. This independently
 confirmed the earlier three-method pass. Undo cleanup completed; no Save was clicked.
+
+## Run only Selected Element checks
+
+TC_17 and TC_18 are enabled and can be run independently:
+
+```bash
+mvn clean test -DsuiteXmlFile=ElementSelectionTests.xml
+```
+
+These checks read `#selectedElmName` after real clicks and do not edit or save the document.
+
+Sandbox validation: the focused suite completed with 2 passed, 0 failed and 0 skipped.

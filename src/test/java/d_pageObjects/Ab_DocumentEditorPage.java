@@ -400,7 +400,7 @@ public class Ab_DocumentEditorPage extends BasePage {
 
     public void clickTargetParagraph() {
         try {
-            clickInsideEditorText(locateParagraphInEditor());
+            clickPlainBlockWord(locateParagraphInEditor(), a_testBase.BaseClass.getConfig("paragraphSelectionWord"));
         } finally {
             getDriver.switchTo().defaultContent();
         }
@@ -408,10 +408,38 @@ public class Ab_DocumentEditorPage extends BasePage {
 
     public void clickTargetHeading() {
         try {
-            clickInsideEditorText(locateHeadingInEditor());
+            clickPlainBlockWord(locateHeadingInEditor(), a_testBase.BaseClass.getConfig("headingSelectionWord"));
         } finally {
             getDriver.switchTo().defaultContent();
         }
+    }
+
+    /** Click plain text inside the block, avoiding nested formatting and block boundaries. */
+    private void clickPlainBlockWord(WebElement element, String word) {
+        if (word == null || word.isBlank()) {
+            throw new IllegalStateException("Configure a plain selection word for the target block");
+        }
+        js.executeScript("arguments[0].scrollIntoView({block:'center',inline:'nearest'});", element);
+        List<?> point = (List<?>) js.executeScript(
+                "const root=arguments[0],word=arguments[1];let hit=null;"
+                + "for(const node of root.childNodes){if(node.nodeType!==Node.TEXT_NODE)continue;"
+                + "let start=node.textContent.indexOf(word);while(start>=0){"
+                + "const before=node.textContent[start-1]||'',after=node.textContent[start+word.length]||'';"
+                + "if(!/[\\p{L}\\p{N}_]/u.test(before)&&!/[\\p{L}\\p{N}_]/u.test(after)){"
+                + "if(hit)throw new Error('Selection word is ambiguous in plain block text');hit={node,start};}"
+                + "start=node.textContent.indexOf(word,start+word.length);}}"
+                + "if(!hit)throw new Error('Selection word not found in direct plain block text: '+word);"
+                + "const r=document.createRange();r.setStart(hit.node,hit.start);"
+                + "r.setEnd(hit.node,hit.start+word.length);const b=r.getClientRects()[0],h=root.getClientRects()[0];"
+                + "const cx=Math.floor((Math.max(0,h.left)+Math.min(innerWidth,h.right))/2);"
+                + "const cy=Math.floor((Math.max(0,h.top)+Math.min(innerHeight,h.bottom))/2);"
+                + "return [Math.floor(b.x+b.width/2)-cx,Math.floor(b.y+b.height/2)-cy];", element, word);
+        action.moveToElement(element, ((Number) point.get(0)).intValue(),
+                ((Number) point.get(1)).intValue()).click().perform();
+        mywait.until(driver -> Boolean.TRUE.equals(js.executeScript(
+                "const s=window.getSelection();return !!s&&s.rangeCount>0&&s.isCollapsed"
+                + "&&s.anchorNode.nodeType===Node.TEXT_NODE"
+                + "&&s.anchorNode.parentElement===arguments[0];", element)));
     }
 
     /** Click actual text, rather than whitespace at the centre of a wide block. */
