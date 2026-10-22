@@ -63,6 +63,7 @@ Generated at run time, none of it committed: `reports/`, `screenshots/`, `logs/`
 3. **Suite**: add one `<include name="Xx_<Screen>TC" />` line to `Master.xml`.
 4. **Config**: add a key for any value the tests need.
 5. **Manual sheet**: write the method name into the Automation ID column.
+6. **Test catalog**: update [the test case catalog](docs/test-case-catalog.md) with the ID, name, automation method, objective and expected result in the same change.
 
 `Aa_SamplePage` and `Aa_SampleTC` are the templates for steps 1 and 2. Copy them for the first real
 screen, then delete them along with their `<include>` line.
