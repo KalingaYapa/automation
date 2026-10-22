@@ -391,3 +391,6 @@ suite includes these enabled methods too.
 
 Sandbox validation of `FormattingTests.xml`: 5 passed, 0 failed, 0 skipped,
 including Undo cleanup. Compilation also passed. SonarQube analysis was not run.
+
+For local prerequisites, configuration, terminal commands and report checks, see
+[Run editor formatting tests from the terminal](run-formatting-tests-terminal.md).

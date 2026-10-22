@@ -129,3 +129,5 @@ page objects, Eclipse/cloud setup, reports and the separate scope of editor test
 ## Writing new test cases
 
 Follow [the test-writing guide](docs/test-writing-guide.md) for the team structure, Page Object examples, step logging, SonarQube checks and a reusable request template. Keep [the test case catalog](docs/test-case-catalog.md) updated with every new case.
+
+For local terminal commands to run TC_25–TC_29, see [Run editor formatting tests from the terminal](docs/run-formatting-tests-terminal.md).
