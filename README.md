@@ -114,8 +114,9 @@ retried test appears twice.
 
 `PortalNavigation.xml` covers sandbox login, selecting IATA, opening Authoring File
 List, finding the configured allocation and opening its editor. Each test performs
-its own prerequisites. Supply `SANDBOX_URL`, `SANDBOX_USERNAME`, and
-`SANDBOX_PASSWORD` securely through the test process environment, then run:
+its own prerequisites. Fill in `username` and `password` in your local
+`src/test/resources/config.properties` (never commit their values). Set the portal
+URL through `appURL` or `SANDBOX_URL`, then run:
 
 ```bash
 mvn test -DsuiteXmlFile=PortalNavigation.xml

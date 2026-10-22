@@ -30,14 +30,22 @@ or check in a document. It does not run the existing editing tests.
 
 ## Credentials and target data
 
-Provide these variables securely in the process that starts Maven or TestNG:
+Set the existing keys in your local `src/test/resources/config.properties`:
 
-- `SANDBOX_URL`: the portal/login URL.
-- `SANDBOX_USERNAME`: the sandbox account's email.
-- `SANDBOX_PASSWORD`: the sandbox account's password.
+```properties
+username=YOUR_SANDBOX_EMAIL
+password=YOUR_SANDBOX_PASSWORD
+```
 
-In Eclipse, use Run Configurations > TestNG > Environment. Do not paste secrets in
-Java, config.properties, suite XML, terminal commands or committed launch files.
+These are placeholders, not real credentials. The committed values remain blank.
+Keep your filled-in local file out of commits. The login page now reads these keys
+through `BaseClass.getConfig()` and does not read `SANDBOX_USERNAME` or
+`SANDBOX_PASSWORD`. Blank values fail with a message identifying the missing key.
+
+Set `appURL` locally to the portal/login URL, or keep using `SANDBOX_URL` for the
+URL only. If `SANDBOX_URL` is already set, it takes precedence over the file's appURL
+unless an explicit `-DappURL` is supplied.
+
 Login errors deliberately omit Selenium exception causes that might contain typed
 credentials. This flow assumes the verified email/Continue/password form; SSO/MFA
 requires a supported separate flow.
@@ -114,3 +122,9 @@ The current run produced both the HTML and Excel reports. Tests used fresh brows
 sessions, native project-dropdown selection, the table's file-name filter, and the
 correct row's Edit link. No document content was changed and no Save, Reset,
 Check Out, or Check In action was performed. Other suites were not part of this run.
+
+After switching the credential source to config.properties, compilation and the
+live login case passed (1 passed, 0 failed, 0 skipped). Verification used a private
+temporary configuration outside the checkout, removed after execution. The
+committed username/password values remain blank; the five-case navigation suite
+was not repeated for this credential-source-only change.

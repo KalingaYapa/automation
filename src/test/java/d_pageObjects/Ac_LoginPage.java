@@ -4,9 +4,10 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
+import a_testBase.BaseClass;
 import c_basePage.BasePage;
 
-/** Two-stage portal login. Credentials are read only from the process environment. */
+/** Two-stage portal login. Credentials are read through the framework configuration. */
 public class Ac_LoginPage extends BasePage {
     @FindBy(id = "email")
     private WebElement email;
@@ -19,17 +20,17 @@ public class Ac_LoginPage extends BasePage {
         super(driver);
     }
 
-    private String requiredEnvironment(String name) {
-        String value = System.getenv(name);
+    private String requiredConfig(String name) {
+        String value = BaseClass.getConfig(name);
         if (value == null || value.isBlank()) {
-            throw new IllegalStateException("Set " + name + " securely in the test process environment");
+            throw new IllegalStateException("Set " + name + " in your local src/test/resources/config.properties");
         }
         return value;
     }
 
     public Ad_PortalPage login() {
-        String username = requiredEnvironment("SANDBOX_USERNAME");
-        String secret = requiredEnvironment("SANDBOX_PASSWORD");
+        String username = requiredConfig("username");
+        String secret = requiredConfig("password");
         try {
             enterText(email, username);
             clickElement(submit);
