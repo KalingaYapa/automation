@@ -52,9 +52,10 @@ public class BaseClass {
 
 	// ------------------------------------------------------------------ config
 
-	/** Reads a key from config.properties. */
+	/** Reads a configuration key, allowing an explicit JVM property override. */
 	public static String getConfig(String key) {
-		return CONFIG.getString(key).trim();
+		String override = System.getProperty(key);
+		return (override == null ? CONFIG.getString(key) : override).trim();
 	}
 
 	/** Reads a numeric key from config.properties. */
@@ -62,9 +63,14 @@ public class BaseClass {
 		return Integer.parseInt(getConfig(key));
 	}
 
-	/** Base URL of the application, ending with a slash. */
+	/** Application entry URL: explicit JVM override, sandbox environment, then config. */
 	public static String getAppUrl() {
-		return getConfig("appURL");
+		String override = System.getProperty("appURL");
+		if (override != null && !override.isBlank()) {
+			return override.trim();
+		}
+		String sandboxUrl = System.getenv("SANDBOX_URL");
+		return sandboxUrl == null || sandboxUrl.isBlank() ? getConfig("appURL") : sandboxUrl.trim();
 	}
 
 	/** WebDriver bound to the calling thread. */
@@ -165,6 +171,17 @@ public class BaseClass {
 			logger.warn("Unsupported browser '" + browser + "'. Defaulting to Chrome.");
 		}
 		ChromeOptions options = new ChromeOptions();
+		String chromeBinary = System.getProperty("chromeBinary");
+		if (chromeBinary != null && !chromeBinary.isBlank()) {
+			options.setBinary(chromeBinary);
+		}
+		// Explicit opt-ins for isolated Linux containers; desktop defaults are unchanged.
+		if (Boolean.getBoolean("chromeNoSandbox")) {
+			options.addArguments("--no-sandbox");
+		}
+		if (Boolean.getBoolean("chromeDisableDevShmUsage")) {
+			options.addArguments("--disable-dev-shm-usage");
+		}
 		options.setExperimentalOption("excludeSwitches", new String[] { "enable-automation" });
 		if (headless) {
 			options.addArguments("--headless=new");

@@ -109,3 +109,17 @@ reports emailed when the suite finishes.
 `RetryAnalyzer.MAX_RETRY_LIMIT` is `0`, so every test runs once and the reports hold one row per
 test case. Set it to `1` to give flaky tests a second chance, and read the reports knowing a
 retried test appears twice.
+
+## Sandbox portal navigation tests
+
+`PortalNavigation.xml` covers sandbox login, selecting IATA, opening Authoring File
+List, finding the configured allocation and opening its editor. Each test performs
+its own prerequisites. Supply `SANDBOX_URL`, `SANDBOX_USERNAME`, and
+`SANDBOX_PASSWORD` securely through the test process environment, then run:
+
+```bash
+mvn test -DsuiteXmlFile=PortalNavigation.xml
+```
+
+See [the portal navigation guide](docs/portal-navigation-tests.md) for test IDs,
+page objects, Eclipse/cloud setup, reports and the separate scope of editor tests.
