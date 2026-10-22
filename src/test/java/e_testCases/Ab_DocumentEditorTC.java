@@ -197,4 +197,101 @@ public class Ab_DocumentEditorTC extends BaseClass {
             }
         }
     }
+
+    @Test(groups = { CLASS_GROUP, "High" }, description = "TC_25 | Verify applying Italic to a selected heading word")
+    public void verifyApplyingItalicToHeadingWord() {
+        Ab_DocumentEditorPage page = editor();
+        page.selectHeadingWord();
+        page.requireHeadingItalicIsOff();
+        boolean applied = false;
+        try {
+            page.applyItalicToSelection();
+            applied = true;
+            Assert.assertTrue(page.waitForHeadingWordToBecomeItalic(),
+                    "Italic should be active and the selected heading word should be italic");
+        } finally {
+            if (applied) {
+                page.undoHeadingItalic();
+            }
+        }
+    }
+
+    @Test(groups = { CLASS_GROUP, "High" }, description = "TC_26 | Verify applying Underline to a selected heading word")
+    public void verifyApplyingUnderlineToHeadingWord() {
+        Ab_DocumentEditorPage page = editor();
+        page.selectHeadingWord();
+        page.requireHeadingUnderlineIsOff();
+        boolean applied = false;
+        try {
+            page.applyUnderlineToSelection();
+            applied = true;
+            Assert.assertTrue(page.waitForHeadingWordToBecomeUnderlined(),
+                    "Underline should be active and the selected heading word should be underlined");
+        } finally {
+            if (applied) {
+                page.undoHeadingUnderline();
+            }
+        }
+    }
+
+    @Test(groups = { CLASS_GROUP, "High" }, description = "TC_27 | Verify Redo restores undone Bold formatting")
+    public void verifyRedoRestoresBoldFormatting() {
+        Ab_DocumentEditorPage page = editor();
+        page.selectHeadingWord();
+        page.requireHeadingBoldIsOff();
+        boolean boldApplied = false;
+        try {
+            page.applyBoldToSelection();
+            boldApplied = true;
+            page.waitForHeadingWordToBecomeBold();
+            page.undoHeadingBold();
+            boldApplied = false;
+            page.redoHeadingBold();
+            boldApplied = true;
+            Assert.assertTrue(page.waitForHeadingWordToBecomeBold(),
+                    "Redo should restore the heading word's bold markup and active Bold button");
+        } finally {
+            if (boldApplied) {
+                page.undoHeadingBold();
+            }
+        }
+    }
+
+    @Test(groups = { CLASS_GROUP, "High" }, description = "TC_28 | Verify applying an unordered list to a paragraph")
+    public void verifyApplyingUnorderedListToParagraph() {
+        Ab_DocumentEditorPage page = editor();
+        page.requireTargetParagraphIsNotAList();
+        page.clickTargetParagraph();
+        boolean applied = false;
+        try {
+            page.applyUnorderedList();
+            applied = true;
+            Assert.assertTrue(page.waitForTargetParagraphInUnorderedList(),
+                    "The target paragraph should be an unordered list item and the list button should be active");
+        } finally {
+            if (applied) {
+                page.undoParagraphList();
+            }
+        }
+    }
+
+    @Test(groups = { CLASS_GROUP, "High" }, description = "TC_29 | Verify applying an ordered list to a paragraph")
+    public void verifyApplyingOrderedListToParagraph() {
+        Ab_DocumentEditorPage page = editor();
+        page.requireTargetParagraphIsNotAList();
+        page.clickTargetParagraph();
+        boolean applied = false;
+        try {
+            page.applyOrderedList();
+            applied = true;
+            Assert.assertTrue(page.waitForTargetParagraphInOrderedList(),
+                    "The target paragraph should be an ordered list item and the list button should be active");
+        } finally {
+            if (applied) {
+                page.undoParagraphList();
+            }
+        }
+    }
+
+
 }

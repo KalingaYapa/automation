@@ -1,6 +1,6 @@
 # Document editor tests
 
-This guide describes 19 checks covering the supplied title-bar HTML, existing bold text, and applying Bold to a heading word. They do not click Save,
+This guide describes 24 editor checks covering title-bar controls, formatting, Undo/Redo, Selected Element, paragraph splitting and lists. They do not click Save,
 Reset File, Validate File, or Check In. Enabled state means the HTML control accepts
 interaction; it does not prove saving, resetting, validation, or check-in works.
 
@@ -370,3 +370,24 @@ mvn clean test -DsuiteXmlFile=ElementSelectionTests.xml
 These checks read `#selectedElmName` after real clicks and do not edit or save the document.
 
 Sandbox validation: the focused suite completed with 2 passed, 0 failed and 0 skipped.
+
+## Additional formatting and list cases (TC_25–TC_29)
+
+The existing editor class now includes five cases for applying Italic, applying
+Underline, Redo after undoing Bold, converting a paragraph to an unordered list,
+and converting a paragraph to an ordered list. They use the existing login and
+navigation setup and the same page object structure. See the
+[test case catalog](test-case-catalog.md) for objectives and expected results.
+
+```bash
+mvn clean test -DsuiteXmlFile=FormattingTests.xml
+```
+
+Each checks the toolbar state and actual document formatting or list structure.
+Tests require an editable sandbox file, a heading word without the tested
+formatting, and a target paragraph outside any list. Cleanup uses Undo; tests
+do not click Save, Reset File or Accept Change. The normal `DocumentEditor.xml`
+suite includes these enabled methods too.
+
+Sandbox validation of `FormattingTests.xml`: 5 passed, 0 failed, 0 skipped,
+including Undo cleanup. Compilation also passed. SonarQube analysis was not run.

@@ -280,7 +280,7 @@ public class Ab_DocumentEditorPage extends BasePage {
                         selection.addRange(range);
                     }
                     """, heading, expected);
-            mywait.withMessage("The configured heading word must be selected before applying Bold")
+            mywait.withMessage("The configured heading word must be selected before applying formatting")
                     .until(driver -> Boolean.TRUE.equals(js.executeScript(
                     "const s=window.getSelection();return !!s && !s.isCollapsed"
                     + " && arguments[0].contains(s.anchorNode) && arguments[0].contains(s.focusNode)"
@@ -370,6 +370,151 @@ public class Ab_DocumentEditorPage extends BasePage {
         undoHeadingBold();
         selectHeadingWord();
         waitForBoldFormattingState(false);
+    }
+
+    private static final By ITALIC_BUTTON = By.cssSelector("a.cke_button.cke_button__italic");
+    private static final By UNDERLINE_BUTTON = By.cssSelector("a.cke_button.cke_button__underline");
+    private static final By REDO_BUTTON = By.cssSelector("a.cke_button.cke_button__redo");
+    private static final By UNORDERED_LIST_BUTTON = By.cssSelector("a.cke_button.cke_button__bulletedlist");
+    private static final By ORDERED_LIST_BUTTON = By.cssSelector("a.cke_button.cke_button__numberedlist");
+    private static final By PARAGRAPH_OR_LIST_ITEM = By.cssSelector("[data-element='p'],[data-element='li'],p,li");
+
+    private void clickEnabledCommand(By locator) {
+        getDriver.switchTo().defaultContent();
+        WebElement button = mywait.until(driver -> findElementsNow(locator).stream()
+                .filter(element -> element.isDisplayed() && element.isEnabled()
+                        && !"true".equalsIgnoreCase(element.getAttribute("aria-disabled"))
+                        && !element.getAttribute("class").contains("cke_button_disabled"))
+                .findFirst().orElse(null));
+        clickElement(button);
+    }
+
+    private void waitForCommandActive(By locator) {
+        getDriver.switchTo().defaultContent();
+        mywait.until(driver -> findElementsNow(locator).stream()
+                .anyMatch(button -> button.isDisplayed()
+                        && java.util.Arrays.asList(button.getAttribute("class").split("\\s+"))
+                                .contains("cke_button_on")));
+    }
+
+    private boolean hasHeadingWordStyle(String selector, String property, String expectedValue) {
+        try {
+            WebElement heading = locateHeadingInEditor();
+            return Boolean.TRUE.equals(js.executeScript(FIND_HEADING_WORD
+                    + "const format=node.parentElement.closest(arguments[2]);"
+                    + "if(!format || !root.contains(format))return false;"
+                    + "for(let e=node.parentElement;e && root.contains(e);e=e.parentElement){"
+                    + "if(getComputedStyle(e).getPropertyValue(arguments[3]).includes(arguments[4]))return true;}"
+                    + "return false;", heading, a_testBase.BaseClass.getConfig("headingWord"),
+                    selector, property, expectedValue));
+        } finally {
+            getDriver.switchTo().defaultContent();
+        }
+    }
+
+    public void requireHeadingItalicIsOff() {
+        if (isHeadingWordItalic()) {
+            throw new IllegalStateException("Precondition: heading word must not already be italic");
+        }
+    }
+
+    public boolean isHeadingWordItalic() {
+        return hasHeadingWordStyle("i,em,[data-element='i'],[data-style='italic']", "font-style", "italic");
+    }
+
+    public void applyItalicToSelection() {
+        clickEnabledCommand(ITALIC_BUTTON);
+    }
+
+    public boolean waitForHeadingWordToBecomeItalic() {
+        waitForCommandActive(ITALIC_BUTTON);
+        return mywait.until(driver -> isHeadingWordItalic());
+    }
+
+    public void undoHeadingItalic() {
+        clickUndo();
+        mywait.until(driver -> !isHeadingWordItalic());
+    }
+
+    public void requireHeadingUnderlineIsOff() {
+        if (isHeadingWordUnderlined()) {
+            throw new IllegalStateException("Precondition: heading word must not already be underlined");
+        }
+    }
+
+    public boolean isHeadingWordUnderlined() {
+        return hasHeadingWordStyle("u,[data-element='u'],[data-style='underline']",
+                "text-decoration-line", "underline");
+    }
+
+    public void applyUnderlineToSelection() {
+        clickEnabledCommand(UNDERLINE_BUTTON);
+    }
+
+    public boolean waitForHeadingWordToBecomeUnderlined() {
+        waitForCommandActive(UNDERLINE_BUTTON);
+        return mywait.until(driver -> isHeadingWordUnderlined());
+    }
+
+    public void undoHeadingUnderline() {
+        clickUndo();
+        mywait.until(driver -> !isHeadingWordUnderlined());
+    }
+
+    public void redoHeadingBold() {
+        clickEnabledCommand(REDO_BUTTON);
+    }
+
+    private WebElement locateTargetParagraphOrListItem() {
+        return locateInEditor(() -> {
+            String expected = normalizeEditorText(a_testBase.BaseClass.getConfig("editorParagraphText"));
+            return findElementsNow(PARAGRAPH_OR_LIST_ITEM).stream()
+                    .filter(element -> element.isDisplayed()
+                            && expected.equals(normalizeEditorText(element.getText())))
+                    .findFirst().orElse(null);
+        });
+    }
+
+    private String getTargetParagraphListType() {
+        try {
+            WebElement paragraph = locateTargetParagraphOrListItem();
+            return (String) js.executeScript(
+                    "const item=arguments[0].closest('li,[data-element=li]');"
+                    + "const list=item?.parentElement.closest('ul,ol,[data-element=ul],[data-element=ol]');"
+                    + "return list ? (list.getAttribute('data-element') || list.tagName.toLowerCase()) : '';",
+                    paragraph);
+        } finally {
+            getDriver.switchTo().defaultContent();
+        }
+    }
+
+    public void requireTargetParagraphIsNotAList() {
+        if (!getTargetParagraphListType().isEmpty()) {
+            throw new IllegalStateException("Precondition: target paragraph must not already be a list item");
+        }
+    }
+
+    public void applyUnorderedList() {
+        clickEnabledCommand(UNORDERED_LIST_BUTTON);
+    }
+
+    public void applyOrderedList() {
+        clickEnabledCommand(ORDERED_LIST_BUTTON);
+    }
+
+    public boolean waitForTargetParagraphInUnorderedList() {
+        waitForCommandActive(UNORDERED_LIST_BUTTON);
+        return mywait.until(driver -> "ul".equals(getTargetParagraphListType()));
+    }
+
+    public boolean waitForTargetParagraphInOrderedList() {
+        waitForCommandActive(ORDERED_LIST_BUTTON);
+        return mywait.until(driver -> "ol".equals(getTargetParagraphListType()));
+    }
+
+    public void undoParagraphList() {
+        clickUndo();
+        mywait.until(driver -> getTargetParagraphListType().isEmpty());
     }
 
     private static final By SELECTED_ELEMENT_NAME = By.id("selectedElmName");

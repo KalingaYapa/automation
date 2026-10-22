@@ -4,11 +4,11 @@ This catalog describes the test cases in `src/test/java/e_testCases`. Names and 
 
 ## Maintenance
 
-Whenever a test is added, update this file in the same change with its ID, name, objective and expected result. Keep entries aligned when tests are renamed, changed, disabled or removed. Include the automation method so each entry can be traced to its implementation. New application test IDs should continue after TC_24; the sample template has its own overlapping IDs.
+Whenever a test is added, update this file in the same change with its ID, name, objective and expected result. Keep entries aligned when tests are renamed, changed, disabled or removed. Include the automation method so each entry can be traced to its implementation. New application test IDs should continue after TC_29; the sample template has its own overlapping IDs.
 
 ## Document editor — Ab_DocumentEditorTC
 
-Each enabled test starts with a fresh browser, logs in, selects IATA, opens Authoring File List and opens the configured document editor. TC_01–TC_12 and TC_16 are currently commented out; TC_13–TC_15 and TC_17–TC_19 are enabled. A suite must include a test for it to execute.
+Each enabled test starts with a fresh browser, logs in, selects IATA, opens Authoring File List and opens the configured document editor. TC_01–TC_12 and TC_16 are currently commented out; TC_13–TC_15, TC_17–TC_19 and TC_25–TC_29 are enabled. A suite must include a test for it to execute.
 
 The title-bar cases check labels and availability only. They do not perform Save, Reset File, Validate File or Check In. Formatting and paragraph-split tests undo their changes and do not save the document.
 
@@ -51,6 +51,18 @@ These five cases are enabled and are selected by `PortalNavigation.xml`. Each pe
 | --- | --- | --- | --- | --- |
 | TC_23 | Verify the allocated document is listed | `verifyTargetDocumentIsListed` | Find the configured document allocation in Authoring File List. | The matching allocation row displays expectedDocumentTitle. |
 | TC_24 | Verify Edit opens the allocated document editor | `verifyEditOpensDocumentEditor` | Click Edit for the configured document allocation. | The editor opens with a ready editing area and a title matching expectedDocumentTitle. |
+
+## Editor formatting and lists — Ab_DocumentEditorTC
+
+TC_25–TC_29 use the existing editor setup, page object and test groups. Each starts with a fresh browser and opens the configured document. Run these five cases with `mvn clean test -DsuiteXmlFile=FormattingTests.xml`; they are also included by `DocumentEditor.xml`. These cases undo their own changes and never save or accept tracked changes.
+
+| ID | Test case name | Automation method | Objective | Expected result |
+| --- | --- | --- | --- | --- |
+| TC_25 | Verify applying Italic to a selected heading word | `verifyApplyingItalicToHeadingWord` | Select the configured heading word, initially without italic formatting, and click Italic. | Italic becomes active and the selected word has italic markup with rendered italic font style. Undo removes the applied formatting. |
+| TC_26 | Verify applying Underline to a selected heading word | `verifyApplyingUnderlineToHeadingWord` | Select the configured heading word, initially without underline formatting, and click Underline. | Underline becomes active and the selected word has underline markup with rendered underline decoration. Undo removes the applied formatting. |
+| TC_27 | Verify Redo restores undone Bold formatting | `verifyRedoRestoresBoldFormatting` | Apply Bold to the configured heading word, undo it, then click Redo. | Undo removes explicit Bold formatting. Redo restores bold markup, rendered bold weight and the active Bold button. Final Undo removes the change. |
+| TC_28 | Verify applying an unordered list to a paragraph | `verifyApplyingUnorderedListToParagraph` | Click plain text in the configured paragraph, initially outside a list, and click the bulleted-list button. | The unordered-list button becomes active and the unchanged paragraph text belongs to a list item inside an unordered list (ul). Undo restores a non-list paragraph. |
+| TC_29 | Verify applying an ordered list to a paragraph | `verifyApplyingOrderedListToParagraph` | Click plain text in the configured paragraph, initially outside a list, and click the numbered-list button. | The ordered-list button becomes active and the unchanged paragraph text belongs to a list item inside an ordered list (ol). Undo restores a non-list paragraph. |
 
 ## Sample template — Aa_SampleTC
 
