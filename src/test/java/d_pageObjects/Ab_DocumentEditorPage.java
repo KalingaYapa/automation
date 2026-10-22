@@ -329,12 +329,18 @@ public class Ab_DocumentEditorPage extends BasePage {
     // Confirmed editor paragraph markup; avoid the generated inno_ref attribute.
     private static final By PARAGRAPH = By.cssSelector("div[data-element='p']");
 
+    /** Ignore editor marker characters, preserving meaningful spaces and punctuation. */
+    private String normalizeEditorText(String text) {
+        return text.replace("\u200B", "").replace("\u2063", "").replace("\uFEFF", "")
+                .replaceAll("[\\s\\p{Z}]+", " ").trim();
+    }
+
     private WebElement locateParagraphInEditor() {
         return locateInEditor(() -> {
             WebElement match = null;
-            String expected = a_testBase.BaseClass.getConfig("editorParagraphText");
+            String expected = normalizeEditorText(a_testBase.BaseClass.getConfig("editorParagraphText"));
             for (WebElement paragraph : findElementsNow(PARAGRAPH)) {
-                if (paragraph.isDisplayed() && paragraph.getText().replace("\u200b", "").trim().equals(expected)) {
+                if (paragraph.isDisplayed() && normalizeEditorText(paragraph.getText()).equals(expected)) {
                     if (match != null) {
                         throw new IllegalStateException("Multiple matching editor paragraphs; scope the locator");
                     }
@@ -367,7 +373,7 @@ public class Ab_DocumentEditorPage extends BasePage {
         List<?> point = (List<?>) js.executeScript(
                 "const root=arguments[0],walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);"
                 + "let node,start;while(node=walker.nextNode()){"
-                + "start=node.textContent.search(/[^\\s\\u200b]/);if(start>=0)break;}"
+                + "start=node.textContent.search(/[^\\s\\u200B\\u2063\\uFEFF]/);if(start>=0)break;}"
                 + "if(!node)throw new Error('No visible text to click');"
                 + "const r=document.createRange();r.setStart(node,start);r.setEnd(node,start+1);"
                 + "const b=r.getClientRects()[0],h=root.getClientRects()[0];"
@@ -437,15 +443,46 @@ public class Ab_DocumentEditorPage extends BasePage {
         try {
             WebElement paragraph = locateParagraphInEditor();
             clickInsideEditorText(paragraph);
-            js.executeScript(
-                    "const root=arguments[0],text=arguments[1];"
-                    + "const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);"
-                    + "let n,match=null;while(n=w.nextNode()){const i=n.textContent.indexOf(text);"
-                    + "if(i>=0){if(match)throw new Error('Split boundary is ambiguous');match={n:n,i:i};}}"
-                    + "if(!match)throw new Error('Split boundary not found');"
-                    + "const r=document.createRange();r.setStart(match.n,match.i);r.collapse(true);"
-                    + "const s=window.getSelection();s.removeAllRanges();s.addRange(r);",
-                    paragraph, a_testBase.BaseClass.getConfig("paragraphSplitBefore"));
+            js.executeScript("""
+                    const root = arguments[0];
+                    const markers = /[\\u200B\\u2063\\uFEFF]/;
+                    const normalise = value => value.replace(/[\\u200B\\u2063\\uFEFF]/g, '')
+                        .replace(/\\s+/g, ' ').trim();
+                    const boundary = normalise(arguments[1]);
+                    if (!boundary) throw new Error('Split boundary must not be empty');
+                    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+                    let node, text = '';
+                    const positions = [];
+                    // Map each normalised UTF-16 character back to its original DOM position.
+                    // This allows the boundary to span formatting elements and editor markers.
+                    while (node = walker.nextNode()) {
+                        for (let offset = 0; offset < node.data.length; offset++) {
+                            const character = node.data[offset];
+                            if (markers.test(character)) continue;
+                            if (/\\s/.test(character)) {
+                                if (!text || text.endsWith(' ')) continue;
+                                text += ' ';
+                            } else {
+                                text += character;
+                            }
+                            positions.push({node, offset});
+                        }
+                    }
+                    const index = text.indexOf(boundary);
+                    if (index < 0) throw new Error('Split boundary not found in normalised paragraph text');
+                    if (text.indexOf(boundary, index + 1) >= 0)
+                        throw new Error('Split boundary is ambiguous in paragraph');
+                    const position = positions[index];
+                    const range = document.createRange();
+                    range.setStart(position.node, position.offset);
+                    range.collapse(true);
+                    const selection = window.getSelection();
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                    if (!selection.isCollapsed || selection.anchorNode !== position.node
+                            || selection.anchorOffset !== position.offset)
+                        throw new Error('Caret was not placed at the split boundary');
+                    """, paragraph, a_testBase.BaseClass.getConfig("paragraphSplitBefore"));
             action.sendKeys(Keys.ENTER).perform();
         } finally {
             getDriver.switchTo().defaultContent();

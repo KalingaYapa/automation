@@ -191,8 +191,11 @@ the label update on the main page.
 
 `editorParagraphText` holds the exact supplied sentence. The provided paragraph
 HTML confirms `div[data-element='p']`; its generated `inno_ref` is deliberately
-avoided. Visible text must match exactly after trimming and removing zero-width
-spaces. Duplicate matching elements fail explicitly. These cases still require
+avoided. Visible text and configured text are compared after removing U+200B,
+U+2063 and U+FEFF editor markers, collapsing whitespace (including non-breaking
+spaces), and trimming. Punctuation and actual wording still must match; missing
+sentence spaces are not silently invented. Duplicate matching elements fail
+explicitly. These cases still require
 the existing authenticated editor setup.
 
 Validation: compilation and four local browser-fixture checks passed: heading to p
@@ -221,8 +224,11 @@ to the same section.
 
 Caret placement uses the browser Selection/Range API after a native click focuses
 the paragraph. Enter is sent as a WebDriver key action, rather than inserting markup
-with JavaScript. The split boundary must occur in one text node; a boundary spanning
-multiple nested inline nodes needs an adapted caret locator.
+with JavaScript. The boundary is searched across all descendant text nodes after
+removing editor markers and collapsing whitespace. A character-to-DOM-position map
+places the caret before the actual boundary even when bold spans split the phrase
+across nodes. Empty or repeated boundaries fail explicitly. The code reads text and
+sets a collapsed selection; it does not rewrite the paragraph's HTML.
 
 Cleanup clicks Undo only when Enter was sent and the count changed, then waits for
 the baseline count. It does not blindly undo when no structure change was observed.
@@ -234,3 +240,22 @@ Validation: compilation passed. Local inline and iframe fixtures passed paragrap
 count transitions 2 to 3 to 2, including cleanup, with a nested paragraph excluded
 from the section count. The fixture simulates Enter and structure synchronization;
 this does not verify the authenticated application's split behavior.
+
+## Paragraph lookup and split-boundary fix
+
+The supplied paragraph includes U+2063 invisible separators and formatting spans
+inside the split phrase. Paragraph matching now normalizes those markers and
+whitespace on both sides of the comparison. The split helper maps normalized text
+back to the original text nodes, so `By this action` may cross multiple spans.
+The text-click helper also skips marker-only characters when choosing a visible
+character to click. Existing duplicate-paragraph protection remains in place.
+
+TC_19 still asserts only the Document Structure count N to N+1 and restores the
+baseline with Undo. No hard-coded paragraph reference, missing-space workaround,
+longer timeout, or changes to the document's content are used to make lookup pass.
+
+Validation: compilation passed. Six local Selenium fixtures passed: plain text,
+U+2063-marked text with nested bold spans, and mixed/non-breaking whitespace, each
+in inline and iframe editors. Fixtures checked the actual split boundary as a
+regression check, the N to N+1 count, and Undo restoration. The production TC_19
+assertion remains count-only. Live sandbox execution is not claimed.
