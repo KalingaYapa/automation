@@ -288,3 +288,7 @@ Undo cleanup. After reloading without clicking Save, the saved paragraph text ma
 the original, including its raw U+2063 marker sequence. No Save, Reset or Check In
 was clicked. The browser was closed afterward. This verifies TC_19 for the inspected
 saved fixture; it does not validate the other editor test cases.
+
+The committed `editorParagraphText` now matches the verified saved fixture with
+`system.By`, so that live check no longer requires a configuration override for
+this text difference. If the saved document changes, update the test data to match.
