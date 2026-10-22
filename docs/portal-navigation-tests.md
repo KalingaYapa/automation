@@ -108,10 +108,15 @@ driver normally.
 
 ## Scope of existing editor tests
 
-These navigation tests do not automatically log the older editor test class in.
-That class still requires an authenticated editor setup. This change adds the
-requested navigation coverage and reusable page objects, without automatically
-running document-changing cases such as Bold or Enter.
+`Ab_DocumentEditorTC` now has its own `@BeforeMethod(alwaysRun=true)` setup. After
+BaseClass creates the fresh browser, it logs in using config.properties, selects
+the configured project, opens Authoring File List, finds the allocation and opens
+its editor. No login/session is shared between test methods or suites.
+
+Run the 19 editor tests with `mvn test -DsuiteXmlFile=DocumentEditor.xml`.
+`PortalNavigation.xml` still selects only the five independent navigation tests.
+Editor tests include temporary formatting and paragraph-split edits with cleanup;
+use an appropriate sandbox fixture and check their individual preconditions.
 
 ## Validation
 

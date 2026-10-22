@@ -29,7 +29,9 @@ interaction; it does not prove saving, resetting, validation, or check-in works.
 ## Files and framework flow
 
 `DocumentEditor.xml` selects only `Ab_DocumentEditorTC`, running sequentially.
-Inherited `BaseClass.setup()` opens a fresh browser and appURL before each method.
+Inherited `BaseClass.setup()` opens a fresh browser and the portal/login URL before
+each method. The subclass `openAllocatedEditor()` setup then logs in, selects IATA,
+opens Authoring File List, finds the configured allocation and opens its editor.
 Each test creates `Ab_DocumentEditorPage`, which uses the supplied element IDs and
 explicit visibility waits. Tests contain assertions; locators remain in the page object.
 The framework's existing listeners generate HTML and Excel reports.
@@ -42,23 +44,21 @@ The framework's existing listeners generate HTML and Excel reports.
    disabled attribute. Confirm these expectations with your lead for your role and
    document status. The saved-time test expects an already-saved document and the shown
    English, 12-hour time format; it does not verify persistence or timestamp freshness.
-2. Locally set `appURL` in `src/test/resources/config.properties` to:
-   `https://ia-portal-sandbox.innodata.com/projects/IATA/authoring/order/4/file-allocation/33/edit`
-   Use this exact endpoint, without appending an extra slash or `sample`.
-   The committed template appURL is intentionally unchanged.
-3. Set `expectedDocumentTitle` for the selected document. Adjust `savedTimePattern` if
-   a different locale or documented format is required. Do not put credentials in Git.
-4. Arrange the supported login flow in BaseClass for every new browser session.
-   Merely entering username/password in config does not log in: this framework has no
-   implemented application login, and this test suite does not invent one. An already
-   logged-in personal browser does not authenticate Selenium's fresh browser.
+2. Set `appURL` in `src/test/resources/config.properties` to the portal/login URL,
+   such as `https://ia-portal-sandbox.innodata.com/login`. An explicit `-DappURL`
+   overrides `SANDBOX_URL`, which otherwise overrides the file's URL.
+3. Fill in `username` and `password` locally in config.properties; do not commit their
+   values. Check `portalProject`, `portalFileSearch`, `editorFileEditPath`, and
+   `expectedDocumentTitle` identify the intended sandbox allocation.
+4. Authentication and navigation are performed independently before every test by
+   `Ab_DocumentEditorTC.openAllocatedEditor()`. There is no dependency on running
+   PortalNavigation.xml first, or on your personal browser's existing login.
 5. For this cloud environment, the application domain must be allowed in environment
    settings. Activate tools with `source /workspace/.onboarding/env.sh`. The current
-   BaseClass also needs container ChromeOptions before application tests can run:
-   binary `/workspace/.onboarding/tools/debian/usr/lib/chromium/chromium` and arguments
-   `--headless=new`, `--no-sandbox`, `--disable-dev-shm-usage`. These environment/login
-   changes are outside this title-bar test addition; the verified example is in
-   `/workspace/.onboarding/CloudSmoke.java`. Local desktop browser setup may differ.
+   BaseClass supports optional cloud properties `-Dheadless=yes`,
+   `-DchromeBinary=/workspace/.onboarding/tools/debian/usr/lib/chromium/chromium`,
+   `-DchromeNoSandbox=true`, and `-DchromeDisableDevShmUsage=true`.
+   These Linux-container settings are not needed on a normal desktop installation.
 
 Compile without launching browsers:
 
@@ -292,3 +292,18 @@ saved fixture; it does not validate the other editor test cases.
 The committed `editorParagraphText` now matches the verified saved fixture with
 `system.By`, so that live check no longer requires a configuration override for
 this text difference. If the saved document changes, update the test data to match.
+
+## Automatic editor setup
+
+`Ab_DocumentEditorTC.openAllocatedEditor()` is a subclass BeforeMethod. TestNG runs
+it after the inherited BaseClass browser setup and before each editor test, including
+when a single method is selected. Existing teardown still closes the browser if
+navigation or the test fails. Page objects remain local, with no shared session or
+method-order dependency. Login uses the existing username/password config keys.
+
+Validation of automatic setup: compilation and two live read-only editor methods
+(`verifyDocumentTitleIsDisplayed` and `verifyDocumentTitleText`) passed with no
+failures or skips. TestNG ran BaseClass browser setup and openAllocatedEditor
+before each method. A private temporary config supplied credentials and was removed
+afterward; committed credential values remain blank. The full 19-test suite was
+not rerun for this setup change, and no document content was edited.

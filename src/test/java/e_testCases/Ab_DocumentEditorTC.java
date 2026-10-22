@@ -2,12 +2,24 @@ package e_testCases;
 
 import org.testng.Assert;
 import org.testng.annotations.Test;
+import org.testng.annotations.BeforeMethod;
 import a_testBase.BaseClass;
 import d_pageObjects.Ab_DocumentEditorPage;
+import d_pageObjects.Ac_LoginPage;
 
-/** Requires the editor document to be open in an authenticated session. */
+/** Each test independently logs in and opens the allocated document. */
 public class Ab_DocumentEditorTC extends BaseClass {
     private static final String CLASS_GROUP = "Ab_DocumentEditorTC";
+
+    /** TestNG runs the superclass browser setup before this subclass setup. */
+    @BeforeMethod(alwaysRun = true)
+    public void openAllocatedEditor() {
+        new Ac_LoginPage(getDriver()).login()
+                .selectProject(getConfig("portalProject"))
+                .openAuthoringFileList()
+                .findTargetFile()
+                .openTargetFile();
+    }
 
     private Ab_DocumentEditorPage editor() {
         return new Ab_DocumentEditorPage(getDriver());
