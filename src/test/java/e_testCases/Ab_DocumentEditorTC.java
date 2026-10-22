@@ -95,6 +95,7 @@ public class Ab_DocumentEditorTC extends BaseClass {
                 "The Check In button should be enabled for the editable test document");
     }
 
+*/
     @Test(groups = { CLASS_GROUP, "High" }, description = "TC_13 | Verify Bold is active after a single click in bold text")
     public void verifyBoldIsActiveAfterSingleClick() {
         Ab_DocumentEditorPage page = editor();
@@ -129,6 +130,7 @@ public class Ab_DocumentEditorTC extends BaseClass {
         }
     }
 
+/*
     @Test(groups = { CLASS_GROUP, "High" }, description = "TC_16 | Verify Undo restores heading formatting after applying Bold")
     public void verifyUndoRestoresHeadingFormatting() {
         Ab_DocumentEditorPage page = editor();

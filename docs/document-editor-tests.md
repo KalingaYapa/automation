@@ -1,6 +1,6 @@
 # Document editor tests
 
-These 19 checks cover the supplied title-bar HTML, existing bold text, and applying Bold to a heading word. They do not click Save,
+This guide describes 19 checks covering the supplied title-bar HTML, existing bold text, and applying Bold to a heading word. They do not click Save,
 Reset File, Validate File, or Check In. Enabled state means the HTML control accepts
 interaction; it does not prove saving, resetting, validation, or check-in works.
 
@@ -73,7 +73,8 @@ mvn clean test -DsuiteXmlFile=DocumentEditor.xml
 ```
 
 The pom.xml explicitly ignores test failures, so BUILD SUCCESS alone is insufficient. Inspect `target/surefire-reports/testng-results.xml`, `reports/ExtentReport.html`,
-and `reports/ExcelReport.xlsx`. Expect 19 tests, no failures, and no skips; distinguish
+and `reports/ExcelReport.xlsx`. The full catalog has 19 cases; the current branch enables TC_13–TC_15 and TC_19
+(the other cases remain commented out). Check executed counts, failures and skips; distinguish
 setup failures from assertion failures. Do not run the sample suite against this editor.
 
 ## Validation scope
@@ -89,7 +90,7 @@ The remaining editor features will be added after their HTML and behavior are av
 Both cases start from the existing bold word `Depending` (`boldSampleText` in config).
 TC_13 single-clicks the word and waits for a collapsed caret inside its span.
 TC_14 double-clicks it and waits for a non-collapsed selection containing exactly
-`Depending` after trimming whitespace. This prevents a click in the wrong place
+`Depending` after normalizing editor markers and whitespace. This prevents a click in the wrong place
 from being reported as a successful selection. Neither case applies Bold or saves.
 
 The page object finds visible `span[data-element='b'][data-style='bold']` elements by
@@ -121,9 +122,10 @@ back server-side history or notifications.
 
 `editorHeadingText` identifies the supplied heading without its generated reference
 number. `headingWord=Transmit` specifies the exact word to select. A single click
-only places a caret, so it does not reliably format an existing word. The test uses
-a native double-click at the word's measured screen position and verifies that the
-selected text is exactly the configured word.
+only places a caret, so it does not reliably format an existing word. The test uses CKEditor 4's selection API to select the exact configured heading
+word and synchronizes its selection model before clicking the real Bold toolbar
+button. It verifies the browser selection contains exactly that word. Local simple
+editor fixtures use a DOM Range fallback; formatting is never applied by JavaScript.
 
 Before clicking Bold, the test requires `cke_button_off` and no explicit bold
 markup on the word. A heading can already look bold due to CSS, so appearance alone
@@ -307,3 +309,49 @@ failures or skips. TestNG ran BaseClass browser setup and openAllocatedEditor
 before each method. A private temporary config supplied credentials and was removed
 afterward; committed credential values remain blank. The full 19-test suite was
 not rerun for this setup change, and no document content was edited.
+
+## TC_13–TC_15 live failure fixes — 2026-10-23
+
+All three original failures were reproduced. The Bold-word lookup had not reused
+the paragraph normalizer, so a leading U+2063 in `Depending` prevented a match.
+Both element matching and selected-text checks now normalize U+200B/U+2063/U+FEFF
+and whitespace; heading matching uses the same normalization.
+
+The outer editor header can become visible before CKEditor finishes initializing
+its editing document. Early gestures could be lost during iframe initialization.
+`openTargetFile()` and editor-context lookup now wait for CKEditor status `ready`,
+an editable document containing the heading, loaded fonts and a stable document
+identity across polls. This does not require iframe readyState `complete`: CKEditor
+can be ready while that document is still `interactive`.
+
+TC_13 retains a native single-click and checks the caret is inside the bold word.
+TC_14 retains a native double-click and verifies the selected word and toolbar on
+state. TC_15 selects the heading word through CKEditor's own range/selection API,
+then clicks the actual Bold button. The assertion still requires both toolbar on
+and actual bold markup/rendered weight, followed by the existing Undo cleanup.
+No assertion was removed or changed to accept a failed selection.
+
+Validation: compilation passed; local inline and iframe formatting/Undo checks
+passed; the actual TC_13, TC_14 and TC_15 methods then passed against the live sandbox
+through the committed login/navigation setup: **3 passed, 0 failed, 0 skipped**.
+Credentials were supplied in a private temporary configuration, removed afterward.
+No Save, Reset or Check In action was performed. The full editor suite was not rerun.
+
+To rerun only these three tests with normal listeners and per-method editor setup:
+
+```bash
+mvn test -DsuiteXmlFile=BoldTests.xml
+```
+
+The focused suite selects exactly the same three method names verified live. Keep
+username/password and the portal URL configured locally as described above.
+
+The remote `af72684` commit disabled TC_01–TC_18 while this fix was in progress.
+It was preserved during integration, with only the requested TC_13–TC_15 re-enabled.
+TC_01–TC_12 and TC_16–TC_18 remain commented out; TC_19 remains enabled.
+`BoldTests.xml` selects the three enabled Bold methods explicitly.
+
+After integrating the remote test-comment changes and re-enabling the requested
+methods, the actual committed `BoldTests.xml` was run against the sandbox with the
+normal report listeners: **3 passed, 0 failed, 0 skipped**. This independently
+confirmed the earlier three-method pass. Undo cleanup completed; no Save was clicked.

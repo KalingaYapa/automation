@@ -96,6 +96,7 @@ public class Ae_AuthoringFileListPage extends BasePage {
         });
         Ab_DocumentEditorPage editor = new Ab_DocumentEditorPage(getDriver);
         editor.waitForElementToBeVisible(By.id("titlebarFileName"));
+        editor.waitForEditorReady();
         return editor;
     }
 }

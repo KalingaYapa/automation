@@ -113,7 +113,7 @@ BaseClass creates the fresh browser, it logs in using config.properties, selects
 the configured project, opens Authoring File List, finds the allocation and opens
 its editor. No login/session is shared between test methods or suites.
 
-Run the 19 editor tests with `mvn test -DsuiteXmlFile=DocumentEditor.xml`.
+Run the enabled editor tests with `mvn test -DsuiteXmlFile=DocumentEditor.xml`.
 `PortalNavigation.xml` still selects only the five independent navigation tests.
 Editor tests include temporary formatting and paragraph-split edits with cleanup;
 use an appropriate sandbox fixture and check their individual preconditions.

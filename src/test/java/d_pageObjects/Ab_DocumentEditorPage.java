@@ -92,10 +92,10 @@ public class Ab_DocumentEditorPage extends BasePage {
     private static final By BOLD_BUTTON = By.cssSelector("a.cke_button.cke_button__bold");
 
     private WebElement findVisibleBoldWord() {
-        String expected = a_testBase.BaseClass.getConfig("boldSampleText");
+        String expected = normalizeEditorText(a_testBase.BaseClass.getConfig("boldSampleText"));
         List<WebElement> matches = new java.util.ArrayList<>();
         for (WebElement element : findElementsNow(BOLD_TEXT)) {
-            if (element.isDisplayed() && expected.equals(element.getText().trim())) {
+            if (element.isDisplayed() && expected.equals(normalizeEditorText(element.getText()))) {
                 matches.add(element);
             }
         }
@@ -111,7 +111,39 @@ public class Ab_DocumentEditorPage extends BasePage {
         return locateInEditor(this::findVisibleBoldWord);
     }
 
+    /** Wait beyond the outer header: CKEditor can replace its initial iframe document. */
+    public void waitForEditorReady() {
+        getDriver.switchTo().defaultContent();
+        js.executeScript("window.__automationEditorDocument = null;");
+        mywait.withMessage("CKEditor must be ready with a stable, editable document")
+                .until(driver -> Boolean.TRUE.equals(js.executeScript("""
+                        const frames = [...document.querySelectorAll('iframe.cke_wysiwyg_frame')];
+                        const library = window.CKEDITOR;
+                        let doc = null;
+                        if (library) {
+                            const editor = Object.values(library.instances).find(e =>
+                                e.status === 'ready' && e.document && e.editable()
+                                && e.editable().$.isContentEditable
+                                && frames.some(f => f.contentDocument === e.document.$));
+                            if (editor) doc = editor.document.$;
+                        } else {
+                            // Simple inline/iframe editors in the regression fixtures.
+                            const docs = frames.length ? frames.map(f => f.contentDocument) : [document];
+                            doc = docs.find(d => d?.querySelector('[data-element="heading"]')?.isContentEditable);
+                        }
+                        // CKEditor readiness is authoritative; rich-text documents may stay interactive.
+                        if (!doc?.querySelector('[data-element="heading"]') || doc.fonts.status !== 'loaded') {
+                            window.__automationEditorDocument = null;
+                            return false;
+                        }
+                        const stable = window.__automationEditorDocument === doc;
+                        window.__automationEditorDocument = doc;
+                        return stable;
+                        """)));
+    }
+
     private WebElement locateInEditor(java.util.function.Supplier<WebElement> findElement) {
+        waitForEditorReady();
         return mywait.until(driver -> {
             driver.switchTo().defaultContent();
             WebElement word = findElement.get();
@@ -156,7 +188,8 @@ public class Ab_DocumentEditorPage extends BasePage {
                     "const s = window.getSelection();"
                     + "if (!s || !s.rangeCount || !arguments[0].contains(s.anchorNode)"
                     + " || !arguments[0].contains(s.focusNode)) return false;"
-                    + "return arguments[1] ? (!s.isCollapsed && s.toString().trim() === arguments[2])"
+                    + "const clean=t=>t.replace(/[\\u200B\\u2063\\uFEFF]/g,'').replace(/\\s+/g,' ').trim();"
+                    + "return arguments[1] ? (!s.isCollapsed && clean(s.toString()) === clean(arguments[2]))"
                     + " : s.isCollapsed;",
                     word, doubleClick, a_testBase.BaseClass.getConfig("boldSampleText"))));
         } finally {
@@ -207,8 +240,8 @@ public class Ab_DocumentEditorPage extends BasePage {
         return locateInEditor(() -> {
             WebElement match = null;
             for (WebElement heading : findElementsNow(HEADING)) {
-                if (heading.isDisplayed() && heading.getText().replace("\u200b", "").trim()
-                        .equals(a_testBase.BaseClass.getConfig("editorHeadingText"))) {
+                if (heading.isDisplayed() && normalizeEditorText(heading.getText())
+                        .equals(normalizeEditorText(a_testBase.BaseClass.getConfig("editorHeadingText")))) {
                     if (match != null) {
                         throw new IllegalStateException("Multiple matching editor headings");
                     }
@@ -219,26 +252,40 @@ public class Ab_DocumentEditorPage extends BasePage {
         });
     }
 
-    /** Native double-click at the configured word, rather than the heading's centre. */
+    /** Select the exact heading word through the editor's own selection model. */
     public void selectHeadingWord() {
+        String expected = normalizeEditorText(a_testBase.BaseClass.getConfig("headingWord"));
         try {
             WebElement heading = locateHeadingInEditor();
-            js.executeScript("arguments[0].scrollIntoView({block:'center',inline:'nearest'});", heading);
-            List<?> point = (List<?>) js.executeScript(FIND_HEADING_WORD
-                    + "const r=document.createRange();r.setStart(node,match.start);"
-                    + "r.setEnd(node,match.start+word.length);const b=r.getClientRects()[0];"
-                    + "const h=root.getClientRects()[0];"
-                    + "const cx=Math.floor((Math.max(0,h.left)+Math.min(innerWidth,h.right))/2);"
-                    + "const cy=Math.floor((Math.max(0,h.top)+Math.min(innerHeight,h.bottom))/2);"
-                    + "return [Math.floor(b.x+b.width/2)-cx,Math.floor(b.y+b.height/2)-cy];",
-                    heading, a_testBase.BaseClass.getConfig("headingWord"));
-            action.moveToElement(heading, ((Number) point.get(0)).intValue(),
-                    ((Number) point.get(1)).intValue()).doubleClick().perform();
-            mywait.until(driver -> Boolean.TRUE.equals(js.executeScript(
+            js.executeScript(FIND_HEADING_WORD + """
+                    const library = parent.CKEDITOR;
+                    const editor = library && Object.values(library.instances)
+                        .find(e => e.status === 'ready' && e.document?.$ === document);
+                    if (editor) {
+                        editor.focus();
+                        const range = editor.createRange();
+                        const textNode = new library.dom.node(node);
+                        range.setStart(textNode, match.start);
+                        range.setEnd(textNode, match.start + word.length);
+                        editor.getSelection().selectRanges([range]);
+                        editor.forceNextSelectionCheck();
+                        editor.selectionChange(true);
+                    } else {
+                        arguments[0].closest('[contenteditable=true]')?.focus();
+                        const range = document.createRange();
+                        range.setStart(node, match.start);
+                        range.setEnd(node, match.start + word.length);
+                        const selection = window.getSelection();
+                        selection.removeAllRanges();
+                        selection.addRange(range);
+                    }
+                    """, heading, expected);
+            mywait.withMessage("The configured heading word must be selected before applying Bold")
+                    .until(driver -> Boolean.TRUE.equals(js.executeScript(
                     "const s=window.getSelection();return !!s && !s.isCollapsed"
                     + " && arguments[0].contains(s.anchorNode) && arguments[0].contains(s.focusNode)"
-                    + " && s.toString().trim()===arguments[1];",
-                    heading, a_testBase.BaseClass.getConfig("headingWord"))));
+                    + " && s.toString().replace(/[\\u200B\\u2063\\uFEFF]/g,'').trim()===arguments[1];",
+                    heading, expected)));
         } finally {
             getDriver.switchTo().defaultContent();
         }

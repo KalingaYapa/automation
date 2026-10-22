@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<suite name="Editor Bold Checks" parallel="none" thread-count="1">
+    <listeners>
+        <listener class-name="b_utilities.ExtentReportManager" />
+        <listener class-name="b_utilities.AnnotationTransfer" />
+    </listeners>
+    <parameter name="browser" value="chrome" />
+    <test name="TC_13 to TC_15">
+        <classes>
+            <class name="e_testCases.Ab_DocumentEditorTC">
+                <methods>
+                    <include name="verifyBoldIsActiveAfterSingleClick" />
+                    <include name="verifyBoldIsActiveAfterDoubleClick" />
+                    <include name="verifyApplyingBoldToHeadingWord" />
+                </methods>
+            </class>
+        </classes>
+    </test>
+</suite>
