@@ -217,7 +217,11 @@ The supplied structure HTML confirms `#content-scroll`, `li.contentBlockListItem
 and `name='p'`. The configured heading's `inno_ref` is matched to the heading li ID
 (not the duplicate wrapper ID) to locate its nearest `ul.contentBlockList`. Only
 `:scope > div.contentBlockListItemParent > li.contentBlockListItem[name='p']`
-entries are counted. Nested subsections/list paragraphs are excluded; the section
+leaf entries are counted, plus direct accordion headers whose
+`.contentBlockAcordianItemName` label is `p`. Paragraphs with bold/inline children
+use the accordion layout, so counting only li rows would miss them. Headers are
+scoped to `:scope > div.accordion > div.contentBlockAccordian > h2.contentBlockAccordianHeader`.
+Nested subsections/list paragraphs are excluded; the section
 must be expanded and the original paragraph must still contain the configured
 full sentence before the test. The configured heading and paragraph must belong
 to the same section.
@@ -259,3 +263,28 @@ U+2063-marked text with nested bold spans, and mixed/non-breaking whitespace, ea
 in inline and iframe editors. Fixtures checked the actual split boundary as a
 regression check, the N to N+1 count, and Undo restoration. The production TC_19
 assertion remains count-only. Live sandbox execution is not claimed.
+
+## Live TC_19 verification — 2026-10-22
+
+Authenticated Chromium navigation reached IATA, Authoring File List, and the existing
+edit link for order 4 / allocation 33. TLS verification stayed enabled; no certificate
+warning was bypassed. A local browser harness supplied the authenticated driver and
+invoked the existing `verifyEnterIncreasesParagraphCount()` test method. This was a
+single live method check, not a run of the entire TestNG suite or BaseClass login flow.
+
+The first attempt stopped before Enter because the saved paragraph still contained
+`system.By`, while the repository's example data expected `system. By`. The retry
+used an external local config matching the saved text; the document was not edited
+to satisfy that precondition. Users should set `editorParagraphText` to their actual
+saved fixture. Normalization intentionally does not ignore missing punctuation spaces.
+
+Live inspection also revealed that paragraphs with bold children use accordion
+headers instead of li rows. The counting helper now includes both direct paragraph
+layouts. Compilation and six local inline/iframe regression cases with accordion
+paragraphs passed before the live retry.
+
+The live test method passed. A DOM observer recorded counts **4 -> 5 -> 4**, including
+Undo cleanup. After reloading without clicking Save, the saved paragraph text matched
+the original, including its raw U+2063 marker sequence. No Save, Reset or Check In
+was clicked. The browser was closed afterward. This verifies TC_19 for the inspected
+saved fixture; it does not validate the other editor test cases.

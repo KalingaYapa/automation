@@ -405,6 +405,9 @@ public class Ab_DocumentEditorPage extends BasePage {
     private static final By DIRECT_PARAGRAPH_ROWS = By.cssSelector(
             ":scope > div.contentBlockListItemParent > li.contentBlockListItem[name='p']");
 
+    private static final By DIRECT_STRUCTURE_HEADERS = By.cssSelector(
+            ":scope > div.accordion > div.contentBlockAccordian > h2.contentBlockAccordianHeader");
+
     private WebElement getTargetStructureList() {
         if (structureHeadingReference == null) {
             try {
@@ -429,7 +432,18 @@ public class Ab_DocumentEditorPage extends BasePage {
     }
 
     public int getParagraphCountInTargetSection() {
-        return getTargetStructureList().findElements(DIRECT_PARAGRAPH_ROWS).size();
+        WebElement list = getTargetStructureList();
+        int count = list.findElements(DIRECT_PARAGRAPH_ROWS).size();
+        // Elements with formatting children are rendered as accordion headers, not li rows.
+        for (WebElement header : list.findElements(DIRECT_STRUCTURE_HEADERS)) {
+            for (WebElement label : header.findElements(By.cssSelector(".contentBlockAcordianItemName"))) {
+                if ("p".equals(label.getText().trim())) {
+                    count++;
+                    break;
+                }
+            }
+        }
+        return count;
     }
 
     public void waitForParagraphCountInTargetSection(int expectedCount) {
