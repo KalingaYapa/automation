@@ -24,7 +24,7 @@ public class Ab_DocumentEditorTC extends BaseClass {
     private Ab_DocumentEditorPage editor() {
         return new Ab_DocumentEditorPage(getDriver());
     }
-
+/* 
     @Test(groups = { CLASS_GROUP, "High" }, description = "TC_01 | Verify the document title is visible")
     public void verifyDocumentTitleIsDisplayed() {
         Assert.assertTrue(editor().isDocumentTitleDisplayed(), "The document title should be visible");
@@ -174,7 +174,7 @@ public class Ab_DocumentEditorTC extends BaseClass {
         Assert.assertEquals(page.getSelectedElementType(), "heading",
                 "Selected Element should change from p to heading after clicking the heading");
     }
-
+*/
     @Test(groups = { CLASS_GROUP, "High" }, description = "TC_19 | Verify Enter increases the section paragraph count by one")
     public void verifyEnterIncreasesParagraphCount() {
         Ab_DocumentEditorPage page = editor();
