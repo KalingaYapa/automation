@@ -125,3 +125,7 @@ mvn test -DsuiteXmlFile=PortalNavigation.xml
 
 See [the portal navigation guide](docs/portal-navigation-tests.md) for test IDs,
 page objects, Eclipse/cloud setup, reports and the separate scope of editor tests.
+
+## Writing new test cases
+
+Follow [the test-writing guide](docs/test-writing-guide.md) for the team structure, Page Object examples, step logging, SonarQube checks and a reusable request template. Keep [the test case catalog](docs/test-case-catalog.md) updated with every new case.
