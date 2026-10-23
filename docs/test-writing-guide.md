@@ -1,6 +1,10 @@
 # Guide for writing automation test cases
 
-Use this guide when writing new Selenium, Java and TestNG tests with Page Object Model (POM) and Log4j2. It records the structure supplied by the team in `verifyClickingEnterMiddleOfPara` and `ParaPageObjects1`, with adjustments for this repository's existing framework. It does not change existing test implementations.
+Use this guide for every future request to write or extend Selenium, Java and TestNG automation tests in this hybrid framework. Apply the naming and grouping rules below to new code and retain the Page Object Model (POM), Log4j2 logging and verification practices in this guide.
+
+Source: **Automation Framework: Naming and Grouping Standard**, dated **23 October 2026**, supplied as `Automation Framework Naming and Grouping Standard (1).pdf` (4 pages). Sections 1–5 of that standard are recorded below. Logging, frame handling, cleanup and SonarQube practices are supplementary guidance from the previously supplied code sample and repository; the PDF does not define those practices.
+
+The PDF rules supersede the earlier naming/grouping recommendations in this guide, including `Xx_<Screen>TC`, separate mixed-case test/page packages, class-name/High groups and permission to commit `enabled = false`. This documentation update does not itself migrate existing Java code or suites.
 
 ## 1. Structure and responsibilities
 
@@ -15,16 +19,87 @@ Use this guide when writing new Selenium, Java and TestNG tests with Page Object
 
 Keep locators and WebDriver interaction in page objects. Build the page object locally for each test; do not share it or a driver across parallel tests. Use descriptive names such as `paragraphPage`, `clickTargetParagraph` and `isNewParagraphDisplayedInDocumentStructure`. Use correct spelling in new methods; do not copy `Dispalyed` from the sample.
 
-### Mapping the supplied project to this repository
+### Package and class rules — PDF pages 1–2
 
-| Supplied team example | This repository |
-| --- | --- |
-| `Para1TestCase` and `ParaPageObjects1` | `e_testCases/Xx_<Screen>TC` and `d_pageObjects/Xx_<Screen>Page`. Keep existing names for existing screens. |
-| `ReusableMethods.loginAndSearchFileClickEdit()` inside the test | Editor tests already navigate in `Ab_DocumentEditorTC.openAllocatedEditor()` using `@BeforeMethod`. Do not add a second login to those methods. The supplied helper is not present here. |
-| `groups = { "Para", "P2-Para" }` | Current reporting convention uses class name and priority, such as `{ "Ab_DocumentEditorTC", "High" }`. Use the team groups only when working in their project or when its suite/report configuration is deliberately adopted. |
-| `@Test(enabled = true, ...)` | Supported here; `true` is the default. Include the manual ID in `description`, for example `TC_25 | Verify ...`. |
-| Direct frame switching in the test | Existing editor page methods handle inline/iframe contexts. Keep that ownership there; do not mix caller-owned frame switching with those methods. |
-| Named log-message constants and a class logger | Use a `private static final Logger` and meaningful constants for repeated messages, with Log4j2 placeholders. |
+- Package names are all lowercase, one per module/feature: `para`, `list`, `section`, `trackchange`, `undo_redo`, `documenteditor`. Use an underscore only to separate words.
+- The shared framework packages in the standard are `a_testbase`, `b_utilities` and `d_loginpage`. Reuse them; do not create new framework packages.
+- Test classes use `<Module><Number>TestCase`, extend `BaseClass`, and start the next number at about 50 tests: `Para1TestCase`, `Para2TestCase`, `DocumentEditor1TestCase`.
+- Page objects use `<Module>PageObjects<Number>` and extend `BasePage`: `ParaPageObjects1`, `DocumentEditorPageObjects1`.
+- Put the test class and page object in the same module package. New names such as `Ab_DocumentEditorTC`, `Ab_DocumentEditorPage`, `EditorPO`, `d_pageObjects` and `e_testCases` do not follow the standard.
+- Keep login, project selection and file-list navigation in `HomePage` and `ReusableMethods`. Do not create another login page.
+
+```text
+src/test/java/
+├── a_testbase/       BaseClass.java
+├── b_utilities/      ReusableMethods.java, ExtentReportManager.java, RetryAnalyzer.java
+├── d_loginpage/      BasePage.java, HomePage.java
+├── para/             Para1TestCase.java, ParaPageObjects1.java
+└── documenteditor/   DocumentEditor1TestCase.java, DocumentEditorPageObjects1.java
+```
+
+### Methods, fields and constants — PDF page 2
+
+| Item | Required convention | Example |
+| --- | --- | --- |
+| Test method | Unique across the entire project; lowerCamelCase beginning with `verify` | `verifyClickingEnterMiddleOfPara` |
+| Page action | Verb plus element | `clickOnFirstParaVe()`, `inputFileName(String name)` |
+| Boolean page check | `is<Something>` | `isNewParaDisplayedInDs()` |
+| Page value read | `get<Something>` | `getDocumentTitle()` |
+| Locator field | lowerCamelCase with `@FindBy` | `firstPara`, `loginButton` |
+| Constant | `private static final`, UPPER_SNAKE_CASE | `FRAME_0`, `STARTING_TEST_MSG` |
+
+The test method name is the **Automation ID**; write it in the manual test case sheet. Any text used **three or more times** becomes a constant. Search the whole project before choosing a method name, not just its class.
+
+### Exactly two groups — PDF page 3
+
+Every `@Test` has exactly two groups: the module name in PascalCase and the manual-sheet priority mapped to that module.
+
+| Manual sheet priority | Priority group | Document Editor example |
+| --- | --- | --- |
+| Highest / Critical | `P1-<Module>` | `P1-DocumentEditor` |
+| High | `P2-<Module>` | `P2-DocumentEditor` |
+| Medium | `P3-<Module>` | `P3-DocumentEditor` |
+| Low | `P4-<Module>` | `P4-DocumentEditor` |
+
+```java
+@Test(enabled = true, groups = { "Para", "P2-Para" })
+public void verifyClickingEnterMiddleOfPara() { /* scenario */ }
+```
+
+Other module groups include `List`, `Section` and `DocumentEditor`. Do not use a class name as the module group, bare `High`/`Medium` groups, extra smoke/regression groups, `retryAnalyzer` on the annotation, or TestNG `priority =`. The framework handles retry. **Do not commit tests with `enabled = false`.** Keep the existing report-compatible manual ID in `description`; it supplements the two required groups.
+
+### Suite integration — PDF pages 3–4
+
+In the standard project's `testng.xml`, add the module group includes and class **inside the existing** `<test name="RetryMultipleFailedTestcases">` block. Do not rename that block or create another one with the same name. Merge entries with the existing groups/classes and preserve listeners and parameters.
+
+```xml
+<test name="RetryMultipleFailedTestcases">
+    <groups>
+        <run>
+            <!-- Document Editor -->
+            <include name="DocumentEditor" />
+            <include name="P1-DocumentEditor" />
+            <include name="P2-DocumentEditor" />
+            <include name="P3-DocumentEditor" />
+            <include name="P4-DocumentEditor" />
+        </run>
+    </groups>
+    <classes>
+        <!-- Document Editor -->
+        <class name="documenteditor.DocumentEditor1TestCase" />
+    </classes>
+</test>
+```
+
+To run only P1 cases, keep only the relevant `P1-<Module>` include lines for that run. TestNG group includes are alternatives: leaving `DocumentEditor` included also selects P2/P3/P4 cases. Preserve the normal suite configuration when preparing a temporary filtered run.
+
+### Existing repository differences and compatibility
+
+This checkout currently uses `a_testBase.BaseClass`, `c_basePage.BasePage`, `e_testCases.Ab_DocumentEditorTC`, `d_pageObjects.Ab_DocumentEditorPage`, `Ac_LoginPage` and separate portal/file-list page classes. It uses suites such as `Master.xml`, `DocumentEditor.xml` and `FormattingTests.xml`; it does **not** currently contain the standard's `HomePage` or `testng.xml` block. Existing tests still have legacy groups and commented-out bodies. These are migration differences, not conventions to copy for new tests.
+
+For future test work, use the standard module package/class/group names. Reuse the actual shared framework through its existing imports until a coordinated framework-package migration occurs; do not create duplicate `BaseClass`, `BasePage` or login implementations to imitate the PDF. Retain the current single login/navigation setup. If a class is moved/renamed, update its imports, suite class references, group filters and reporting assumptions together. Existing `-Dgroups=High` filters will not select new `P2-<Module>` tests.
+
+Apply the suite integration pattern to this checkout's actual selected suite; do not silently rename `Regression` or another test block to pretend the standard block already exists. A migration to the standard's `testng.xml` layout is a separate implementation task. Do not rename existing Java files or suites merely to update this guide.
 
 The sample's broader paragraph scenario checks the Visual Editor (VE), Document Structure (DS), accepting a tracked change and Code View (CV). Existing TC_19 checks only that Enter increases the section's paragraph count by one, then undoes the split. Accept Change and Code View checks require their own confirmed locators and expected behaviour before implementation.
 
@@ -32,7 +107,7 @@ The sample's broader paragraph scenario checks the Visual Editor (VE), Document 
 
 Before writing code, record:
 
-1. Unique test ID, readable name and automation method name. The next application ID is currently TC_25; check the catalog before allocating it.
+1. Unique test ID, readable name and automation method name. The catalog currently ends at TC_29; allocate the next unused ID and check global method-name uniqueness. Choose the standard module package, numbered class pair and the two required groups from the manual-sheet priority.
 2. Preconditions: project, document allocation, permissions, original text and tracked-change state.
 3. Exact interaction: single click, double click, caret placement, Enter or toolbar action.
 4. Observable expected result and where to verify it: VE, DS, right panel or CV.
@@ -63,33 +138,33 @@ Read a result once after waiting, store it in a local variable, then use that va
 The current `src/test/resources/log4j2.xml` uses root level `info`, so `logger.debug(...)` messages are hidden. To capture detailed steps, add package loggers inside `<Loggers>` before `<Root>`:
 
 ```xml
-<Logger name="e_testCases" level="debug" />
-<Logger name="d_pageObjects" level="debug" />
+<Logger name="documenteditor" level="debug" />
+<Logger name="para" level="debug" />
 ```
 
-These inherit the existing console and file appenders. Logs are written to `logs/Automation.log`. `debug=yes` in `config.properties` controls the existing BasePage debug helper; it does not enable Log4j2 DEBUG messages. No logging configuration is changed by this guide.
+Use the actual module package(s) containing the new tests and pages. While diagnosing legacy classes, add `e_testCases` and `d_pageObjects` package loggers too. These inherit the existing console and file appenders. Logs are written to `logs/Automation.log`. `debug=yes` in `config.properties` controls the existing BasePage debug helper; it does not enable Log4j2 DEBUG messages. No logging configuration is changed by this guide.
 
 ## 4. Test method template using existing editor actions
 
-The following is a reference version of the existing TC_17. Adapt the pattern for new scenarios; do not add another TC_17 or duplicate the method. Place the members in `Ab_DocumentEditorTC`, whose existing setup already opens the editor. Add the Log4j2 imports if missing.
+The following is a reference version of TC_17 with the standard class and groups. It assumes members of `documenteditor.DocumentEditor1TestCase extends BaseClass`, a matching `DocumentEditorPageObjects1` with the existing editor actions, and setup that opens the editor once. These standard-named classes have not been created by this documentation change. Reuse actual BaseClass imports until migration. Do not add another TC_17 or duplicate this method (it already exists globally); adapt the pattern with a new unique method for a new scenario. Add the Log4j2 imports if missing.
 
 ```java
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-private static final Logger LOGGER = LogManager.getLogger(Ab_DocumentEditorTC.class);
+private static final Logger LOGGER = LogManager.getLogger(DocumentEditor1TestCase.class);
 private static final String STARTING_TEST_MSG = "Starting test: {}";
 private static final String FINISHED_TEST_MSG = "Finished test: {} - PASSED";
 private static final String CLICKING_HEADING_MSG = "Clicking plain text in the target heading";
 private static final String CLICKING_PARAGRAPH_MSG = "Clicking plain text in the target paragraph";
 
-@Test(enabled = true, groups = { CLASS_GROUP, "High" },
+@Test(enabled = true, groups = { "DocumentEditor", "P2-DocumentEditor" },
         description = "TC_17 | Verify selecting a paragraph shows p")
 public void verifyParagraphSelectionShowsParagraphType() {
     final String testName = "verifyParagraphSelectionShowsParagraphType";
     LOGGER.info(STARTING_TEST_MSG, testName);
     LOGGER.debug("Initialising document editor page object");
-    Ab_DocumentEditorPage page = new Ab_DocumentEditorPage(getDriver());
+    DocumentEditorPageObjects1 page = new DocumentEditorPageObjects1(getDriver());
 
     LOGGER.debug(CLICKING_HEADING_MSG);
     page.clickTargetHeading();
@@ -114,10 +189,10 @@ Log prerequisite navigation in the existing setup method or navigation page meth
 
 ## 5. Page Object template
 
-This standalone reference demonstrates the supplied constructor, `@FindBy`, class logger and public check methods using this repo's real BasePage helpers. It is an example, not an additional committed Java class. For the existing screen, add methods to `Ab_DocumentEditorPage` rather than creating a duplicate page object.
+This reference uses the standard `documenteditor.DocumentEditorPageObjects1` name and the current repo's `c_basePage.BasePage` import for compatibility. In the standard project that import is `d_loginpage.BasePage`. The helper names shown are available in this checkout; confirm the shared BasePage API in another project. During migration, move/reuse the existing page behaviour rather than maintaining duplicate implementations. No Java class is created by this guide.
 
 ```java
-package d_pageObjects;
+package documenteditor;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -126,14 +201,14 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import c_basePage.BasePage;
 
-public class ExampleSelectedElementPage extends BasePage {
-    private static final Logger LOGGER = LogManager.getLogger(ExampleSelectedElementPage.class);
+public class DocumentEditorPageObjects1 extends BasePage {
+    private static final Logger LOGGER = LogManager.getLogger(DocumentEditorPageObjects1.class);
     private static final String WAITING_FOR_TYPE_MSG = "Waiting for Selected Element: {}";
 
     @FindBy(id = "selectedElmName")
     private WebElement selectedElementName;
 
-    public ExampleSelectedElementPage(WebDriver driver) {
+    public DocumentEditorPageObjects1(WebDriver driver) {
         super(driver); // BasePage initialises PageFactory, waits and Actions.
     }
 
@@ -167,7 +242,7 @@ Call these methods in the main-page context. The real editor page already switch
 
 Apply these checks before review:
 
-- Remove unused imports, fields, constants, parameters, dead code and commented-out test bodies from newly written code. Use `enabled = false` with a documented reason if a new case must be disabled.
+- Remove unused imports, fields, constants, parameters, dead code and commented-out test bodies from newly written code. Do not commit `enabled = false`; the PDF prohibits it. Do not bypass this rule with commented-out test bodies or permanently excluded cases to hide failures. Report blocked cases clearly.
 - Use consistent Java naming, private locator fields and `private static final` loggers/constants. Avoid unnecessary public WebElement getters; expose meaningful actions and checks.
 - Keep methods focused. Extract repeated navigation, frame handling, waits and actions into the appropriate existing helpers. Use constants for repeated messages and configuration for variable test data.
 - Use parameterised logs and avoid expensive WebDriver calls inside log arguments. Read actual results once.
@@ -180,16 +255,17 @@ These practices reduce common findings; they cannot guarantee zero SonarQube iss
 
 ## 7. Verification and completion checklist
 
-1. Compile: `mvn test-compile`.
-2. Run the relevant TestNG suite, for example `mvn clean test -DsuiteXmlFile=ElementSelectionTests.xml` for TC_17/TC_18. Add new cases to the appropriate suite before running them.
-3. Inspect executed counts, failures and skips in TestNG reports. This framework permits test failures without failing the Maven build, so BUILD SUCCESS alone is insufficient.
-4. Confirm the required INFO/DEBUG steps appear in console/file logs with DEBUG enabled for the test/page packages.
-5. Run the team's configured SonarQube analysis and inspect new-code issues and the Quality Gate. Report accurately if analysis was not run.
-6. Update [the test case catalog](test-case-catalog.md) in the same change. Update relevant setup/test guides if behaviour or prerequisites changed.
-7. Review the diff for credentials, generated files, unused code, accidental document changes and unrelated edits before committing.
+1. Check lowercase module package, numbered test/page class pair, global `verify...` method uniqueness, matching page method/field/constant naming, exactly two standard groups and manual-sheet priority. No annotation `retryAnalyzer`, `priority =` or `enabled = false`.
+2. Compile: `mvn test-compile`.
+3. Run the relevant TestNG suite, for example `mvn clean test -DsuiteXmlFile=ElementSelectionTests.xml` for TC_17/TC_18. Add new standard class and group references to the appropriate suite before running them; apply the `RetryMultipleFailedTestcases` instructions when using the standard project layout. Verify report/listener compatibility with the new groups.
+4. Inspect executed counts, failures and skips in TestNG reports. This framework permits test failures without failing the Maven build, so BUILD SUCCESS alone is insufficient.
+5. Confirm the required INFO/DEBUG steps appear in console/file logs with DEBUG enabled for the test/page packages.
+6. Run the team's configured SonarQube analysis and inspect new-code issues and the Quality Gate. Report accurately if analysis was not run.
+7. Update [the test case catalog](test-case-catalog.md) in the same change. Update relevant setup/test guides if behaviour or prerequisites changed.
+8. Review the diff for credentials, generated files, unused code, accidental document changes and unrelated edits before committing.
 
 ## 8. Reusable request for a new test
 
 Copy this when requesting or drafting another case:
 
-> Write test [ID / name] using docs/test-writing-guide.md and the existing framework. Objective: [objective]. Preconditions: [project, document, permissions, original state]. Actions: [exact interaction sequence]. Expected result: [observable values in VE/DS/right panel/CV]. Confirmed HTML/locators: [details]. Use a BaseClass test and BasePage page object, existing login setup, explicit waits, meaningful assertions, and Log4j2 INFO start/result/end plus DEBUG before/after each action, frame change and assertion. Keep locators out of tests, avoid duplicate login and WebDriver calls in log arguments, and follow the SonarQube checklist. Cleanup: [undo only this test's change]. Update docs/test-case-catalog.md, run the relevant suite and report whether SonarQube analysis was actually run.
+> Write test [ID / name] using docs/test-writing-guide.md and the existing framework. Objective: [objective]. Preconditions: [project, document, permissions, original state]. Actions: [exact interaction sequence]. Expected result: [observable values in VE/DS/right panel/CV]. Confirmed HTML/locators: [details]. Use the standard lowercase module package, `<Module><Number>TestCase` and `<Module>PageObjects<Number>` pair, a globally unique `verify...` method and exactly two groups (module and `P<n>-<Module>` from the manual priority). Reuse BaseClass, BasePage and login setup, with explicit waits and meaningful assertions, and Log4j2 INFO start/result/end plus DEBUG before/after each action, frame change and assertion. Keep locators out of tests, avoid duplicate login and WebDriver calls in log arguments, and follow the SonarQube checklist. Cleanup: [undo only this test's change]. Do not add annotation retryAnalyzer/priority or commit enabled=false. Put text repeated three or more times in constants. Update the suite class/group references and docs/test-case-catalog.md, run the relevant suite and report whether SonarQube analysis was actually run.
