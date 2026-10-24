@@ -19,7 +19,7 @@ import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 
-import a_testBase.BaseClass;
+import a_testbase.BaseClass;
 
 /**
  * Emails the Extent and Excel reports when {@code email=yes}.
@@ -31,6 +31,8 @@ import a_testBase.BaseClass;
  * </p>
  */
 public class MonitoringMail {
+    private static final String ENABLED_VALUE = "true";
+
 
 	public void sendMail(String mailServer, String from, String[] to, String subject, String messageBodyText,
 			String attachmentPath, String excelReportName, String extentReportName, String suiteName)
@@ -39,10 +41,10 @@ public class MonitoringMail {
 		Properties props = new Properties();
 		props.put("mail.smtp.host", mailServer);
 		props.put("mail.smtp.port", "465");
-		props.put("mail.smtp.auth", "true");
-		props.put("mail.smtp.starttls.enable", "true");
-		props.put("mail.smtp.starttls.required", "true");
-		props.put("mail.smtp.ssl.enable", "true");
+		props.put("mail.smtp.auth", ENABLED_VALUE);
+		props.put("mail.smtp.starttls.enable", ENABLED_VALUE);
+		props.put("mail.smtp.starttls.required", ENABLED_VALUE);
+		props.put("mail.smtp.ssl.enable", ENABLED_VALUE);
 		props.put("mail.smtp.ssl.protocols", "TLSv1.2");
 		props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
 

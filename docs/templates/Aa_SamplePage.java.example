@@ -7,7 +7,7 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 
-import c_basePage.BasePage;
+import d_loginpage.BasePage;
 
 /**
  * TEMPLATE page object - copy it, rename it, delete this one.

@@ -1,3 +1,5 @@
+> Current structure: all application tests use the PDF naming/grouping standard. Run all 29 with `mvn clean test` (`testng.xml`); `Master.xml` is an equivalent compatibility suite. See [the restructuring guide](framework-restructuring.md). Older validation notes below describe their original runs.
+
 # Run editor formatting tests from the terminal
 
 This guide runs TC_25–TC_29 on your local machine using the existing framework. Commands work in macOS Terminal and Linux shells. Use Chrome; `FormattingTests.xml` explicitly selects it.
@@ -125,7 +127,7 @@ Use one command at a time. The first run can take longer because Maven and Selen
 | `mvn` | Runs Maven using `pom.xml`. |
 | `clean` | Removes the previous `target/` build output. |
 | `test` | Compiles the project and runs the selected TestNG suite. |
-| `-DsuiteXmlFile=FormattingTests.xml` | Selects the suite containing only TC_25–TC_29 instead of the default `Master.xml`. |
+| `-DsuiteXmlFile=FormattingTests.xml` | Selects the suite containing only TC_25–TC_29 instead of the default `testng.xml`. |
 | `-DappURL=...` | Sets the login URL for this run. |
 | `-Dheadless=yes` | Optionally runs Chrome without a visible window. |
 
@@ -154,7 +156,7 @@ For each test, the framework independently:
 
 Confirm the terminal/TestNG report shows five tests executed, five passed, zero failures and zero skips. A skipped test is not a pass; inspect any setup failure too.
 
-Do not rely only on `BUILD SUCCESS`: `pom.xml` currently sets `testFailureIgnore=true`, so Maven can finish successfully even when tests fail.
+Maven now uses `testFailureIgnore=false`, so failed tests fail the build. Still check that the expected tests executed with zero skips; skipped setup is not a pass.
 
 Reports and logs are relative to the project root:
 
@@ -187,7 +189,7 @@ Check report timestamps so you are reading the current run. `clean` removes `tar
 | `mvn: command not found` | Install Maven or add its `bin` directory to PATH; reopen Terminal. |
 | Java release/compiler error | Check both `java -version` and `mvn -version`; Maven needs a compatible JDK, not just a JRE. |
 | `pom.xml` or suite file not found | Run from the repository root and check the branch contains `FormattingTests.xml`. |
-| Sample tests run instead | Supply `-DsuiteXmlFile=FormattingTests.xml`; plain `mvn test` defaults to `Master.xml`. |
+| Sample tests run instead | Supply `-DsuiteXmlFile=FormattingTests.xml`; plain `mvn test` defaults to `testng.xml`. |
 | Login fails or navigates to the wrong URL | Check local username/password and use the explicit `-DappURL` command above. |
 | Paragraph/heading cannot be located | Compare configured text with the saved document and confirm the allocation path. Formatting spans and editor markers are already handled by the page object. |
 | Formatting/list precondition fails | Use the intended starting document state; inspect the failure before rerunning. Do not bypass the precondition or accept unrelated tracked changes. |

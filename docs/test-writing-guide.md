@@ -4,7 +4,7 @@ Use this guide for every future request to write or extend Selenium, Java and Te
 
 Source: **Automation Framework: Naming and Grouping Standard**, dated **23 October 2026**, supplied as `Automation Framework Naming and Grouping Standard (1).pdf` (4 pages). Sections 1–5 of that standard are recorded below. Logging, frame handling, cleanup and SonarQube practices are supplementary guidance from the previously supplied code sample and repository; the PDF does not define those practices.
 
-The PDF rules supersede the earlier naming/grouping recommendations in this guide, including `Xx_<Screen>TC`, separate mixed-case test/page packages, class-name/High groups and permission to commit `enabled = false`. This documentation update does not itself migrate existing Java code or suites.
+The PDF rules supersede the earlier naming/grouping recommendations in this guide, including `Xx_<Screen>TC`, separate mixed-case test/page packages, class-name/High groups and permission to commit `enabled = false`. The implementation has since been migrated to these rules; see `docs/framework-restructuring.md`.
 
 ## 1. Structure and responsibilities
 
@@ -93,13 +93,13 @@ In the standard project's `testng.xml`, add the module group includes and class 
 
 To run only P1 cases, keep only the relevant `P1-<Module>` include lines for that run. TestNG group includes are alternatives: leaving `DocumentEditor` included also selects P2/P3/P4 cases. Preserve the normal suite configuration when preparing a temporary filtered run.
 
-### Existing repository differences and compatibility
+### Current repository implementation
 
-This checkout currently uses `a_testBase.BaseClass`, `c_basePage.BasePage`, `e_testCases.Ab_DocumentEditorTC`, `d_pageObjects.Ab_DocumentEditorPage`, `Ac_LoginPage` and separate portal/file-list page classes. It uses suites such as `Master.xml`, `DocumentEditor.xml` and `FormattingTests.xml`; it does **not** currently contain the standard's `HomePage` or `testng.xml` block. Existing tests still have legacy groups and commented-out bodies. These are migration differences, not conventions to copy for new tests.
+The repository now uses `a_testbase.BaseClass`, `d_loginpage.BasePage`, and `d_loginpage.HomePage`. Shared login, project selection and file-list navigation live in `HomePage`; `ReusableMethods.loginAndSearchFileClickEdit()` opens the editor once per editor test.
 
-For future test work, use the standard module package/class/group names. Reuse the actual shared framework through its existing imports until a coordinated framework-package migration occurs; do not create duplicate `BaseClass`, `BasePage` or login implementations to imitate the PDF. Retain the current single login/navigation setup. If a class is moved/renamed, update its imports, suite class references, group filters and reporting assumptions together. Existing `-Dgroups=High` filters will not select new `P2-<Module>` tests.
+Editor cases are in `documenteditor.DocumentEditor1TestCase` with `DocumentEditorPageObjects1` in the same package. Portal journey cases are in `portal.Portal1TestCase` and reuse the shared HomePage instead of adding another login page. Every test has its module group and mapped priority group. All 29 application cases are enabled.
 
-Apply the suite integration pattern to this checkout's actual selected suite; do not silently rename `Regression` or another test block to pretend the standard block already exists. A migration to the standard's `testng.xml` layout is a separate implementation task. Do not rename existing Java files or suites merely to update this guide.
+`testng.xml` is the default suite with the `RetryMultipleFailedTestcases` block. `Master.xml` is an equivalent compatibility suite. Focused suites retain their existing command names and use standard class/group references. Sample starter cases are archived under `docs/templates` as noncompiled references.
 
 The sample's broader paragraph scenario checks the Visual Editor (VE), Document Structure (DS), accepting a tracked change and Code View (CV). Existing TC_19 checks only that Enter increases the section's paragraph count by one, then undoes the split. Accept Change and Code View checks require their own confirmed locators and expected behaviour before implementation.
 
@@ -142,11 +142,11 @@ The current `src/test/resources/log4j2.xml` uses root level `info`, so `logger.d
 <Logger name="para" level="debug" />
 ```
 
-Use the actual module package(s) containing the new tests and pages. While diagnosing legacy classes, add `e_testCases` and `d_pageObjects` package loggers too. These inherit the existing console and file appenders. Logs are written to `logs/Automation.log`. `debug=yes` in `config.properties` controls the existing BasePage debug helper; it does not enable Log4j2 DEBUG messages. No logging configuration is changed by this guide.
+Use the actual module package(s) containing the new tests and pages. Add a `portal` logger when diagnosing portal cases. These inherit the existing console and file appenders. Logs are written to `logs/Automation.log`. `debug=yes` in `config.properties` controls the existing BasePage debug helper; it does not enable Log4j2 DEBUG messages. No logging configuration is changed by this guide.
 
 ## 4. Test method template using existing editor actions
 
-The following is a reference version of TC_17 with the standard class and groups. It assumes members of `documenteditor.DocumentEditor1TestCase extends BaseClass`, a matching `DocumentEditorPageObjects1` with the existing editor actions, and setup that opens the editor once. These standard-named classes have not been created by this documentation change. Reuse actual BaseClass imports until migration. Do not add another TC_17 or duplicate this method (it already exists globally); adapt the pattern with a new unique method for a new scenario. Add the Log4j2 imports if missing.
+The following is a reference version of TC_17 with the standard class and groups. It assumes members of `documenteditor.DocumentEditor1TestCase extends BaseClass`, a matching `DocumentEditorPageObjects1` with the existing editor actions, and setup that opens the editor once. These classes now exist; import `a_testbase.BaseClass` and use the existing navigation setup. Do not add another TC_17 or duplicate this method (it already exists globally); adapt the pattern with a new unique method for a new scenario. Add the Log4j2 imports if missing.
 
 ```java
 import org.apache.logging.log4j.LogManager;
@@ -189,7 +189,7 @@ Log prerequisite navigation in the existing setup method or navigation page meth
 
 ## 5. Page Object template
 
-This reference uses the standard `documenteditor.DocumentEditorPageObjects1` name and the current repo's `c_basePage.BasePage` import for compatibility. In the standard project that import is `d_loginpage.BasePage`. The helper names shown are available in this checkout; confirm the shared BasePage API in another project. During migration, move/reuse the existing page behaviour rather than maintaining duplicate implementations. No Java class is created by this guide.
+This reference illustrates the existing standard-named page object and shared `d_loginpage.BasePage` helpers. Add members to that class; do not create a duplicate page implementation.
 
 ```java
 package documenteditor;
@@ -199,7 +199,7 @@ import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
-import c_basePage.BasePage;
+import d_loginpage.BasePage;
 
 public class DocumentEditorPageObjects1 extends BasePage {
     private static final Logger LOGGER = LogManager.getLogger(DocumentEditorPageObjects1.class);
@@ -258,7 +258,7 @@ These practices reduce common findings; they cannot guarantee zero SonarQube iss
 1. Check lowercase module package, numbered test/page class pair, global `verify...` method uniqueness, matching page method/field/constant naming, exactly two standard groups and manual-sheet priority. No annotation `retryAnalyzer`, `priority =` or `enabled = false`.
 2. Compile: `mvn test-compile`.
 3. Run the relevant TestNG suite, for example `mvn clean test -DsuiteXmlFile=ElementSelectionTests.xml` for TC_17/TC_18. Add new standard class and group references to the appropriate suite before running them; apply the `RetryMultipleFailedTestcases` instructions when using the standard project layout. Verify report/listener compatibility with the new groups.
-4. Inspect executed counts, failures and skips in TestNG reports. This framework permits test failures without failing the Maven build, so BUILD SUCCESS alone is insufficient.
+4. Inspect executed counts, failures and skips in TestNG reports. Maven now fails for test failures; also verify the expected executed count and zero skips.
 5. Confirm the required INFO/DEBUG steps appear in console/file logs with DEBUG enabled for the test/page packages.
 6. Run the team's configured SonarQube analysis and inspect new-code issues and the Quality Gate. Report accurately if analysis was not run.
 7. Update [the test case catalog](test-case-catalog.md) in the same change. Update relevant setup/test guides if behaviour or prerequisites changed.

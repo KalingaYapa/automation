@@ -1,4 +1,4 @@
-package a_testBase;
+package a_testbase;
 
 import java.io.File;
 import java.time.Duration;
@@ -38,6 +38,8 @@ import org.testng.annotations.Parameters;
  * </p>
  */
 public class BaseClass {
+    private static final String BROWSER_PARAMETER = "browser";
+
 
 	private static final ThreadLocal<WebDriver> THREAD_LOCAL_DRIVER = new ThreadLocal<WebDriver>();
 	private static final ThreadLocal<String> THREAD_LOCAL_BROWSER = new ThreadLocal<String>();
@@ -120,13 +122,13 @@ public class BaseClass {
 	/**
 	 * Opens a browser and the application before every test method.
 	 *
-	 * @param browser passed from Master.xml as &lt;parameter name="browser"&gt;;
+	 * @param browser passed from Master.xml as &lt;parameter name=BROWSER_PARAMETER&gt;;
 	 *                falls back to the browser named in config.properties.
 	 */
-	@Parameters({ "browser" })
+	@Parameters({ BROWSER_PARAMETER })
 	@BeforeMethod(alwaysRun = true)
 	public void setup(@Optional("") String browser) {
-		String targetBrowser = (browser == null || browser.trim().isEmpty()) ? getConfig("browser") : browser.trim();
+		String targetBrowser = (browser == null || browser.trim().isEmpty()) ? getConfig(BROWSER_PARAMETER) : browser.trim();
 		THREAD_LOCAL_BROWSER.set(targetBrowser.toLowerCase());
 
 		boolean headless = getConfig("headless").equalsIgnoreCase("yes");
@@ -140,10 +142,6 @@ public class BaseClass {
 			getDriver().manage().window().maximize();
 		}
 		getDriver().get(getAppUrl());
-
-		// Applications behind a login start here, for example:
-		// new d_pageObjects.Aa_SamplePage(getDriver())
-		// .login(getConfig("username"), getConfig("password"));
 
 		logger.info("[" + Thread.currentThread().getName() + "] " + targetBrowser + " opened " + getAppUrl());
 	}

@@ -43,7 +43,7 @@ import com.aventstack.extentreports.markuputils.MarkupHelper;
 import com.aventstack.extentreports.reporter.ExtentSparkReporter;
 import com.aventstack.extentreports.reporter.configuration.Theme;
 
-import a_testBase.BaseClass;
+import a_testbase.BaseClass;
 
 /**
  * Produces both reports the suite is run for: an Extent HTML report with a
@@ -67,6 +67,11 @@ import a_testBase.BaseClass;
  * </p>
  */
 public class ExtentReportManager implements ITestListener, ISuiteListener {
+    private static final String PASS_RESULT = "Pass";
+    private static final String FAIL_RESULT = "Fail";
+    private static final String DESCRIPTION_SEPARATOR = "|";
+    private static final String REPORT_FONT = "Arial";
+
 
 	private static final String EXTENT_REPORT_NAME = "ExtentReport.html";
 	private static final String EXCEL_REPORT_NAME = "ExcelReport.xlsx";
@@ -174,7 +179,7 @@ public class ExtentReportManager implements ITestListener, ISuiteListener {
 	@Override
 	public synchronized void onTestStart(ITestResult result) {
 		ExtentTest test = extent.createTest(testCaseId(result) + " - " + testCaseTitle(result));
-		test.assignCategory(groupsOf(result));
+		test.assignCategory(result.getMethod().getGroups());
 		test.assignCategory(result.getTestClass().getRealClass().getSimpleName());
 		test.info("Browser: " + BaseClass.getBrowserName());
 		test.info("Method: " + result.getMethod().getMethodName());
@@ -188,7 +193,7 @@ public class ExtentReportManager implements ITestListener, ISuiteListener {
 			test.log(Status.PASS, MarkupHelper
 					.createLabel(testCaseId(result) + " PASSED", ExtentColor.GREEN));
 		}
-		record(result, "Pass", "");
+		record(result, PASS_RESULT, "");
 	}
 
 	@Override
@@ -203,7 +208,7 @@ public class ExtentReportManager implements ITestListener, ISuiteListener {
 			}
 			attachScreenshot(test, result.getMethod().getMethodName());
 		}
-		record(result, "Fail", reason);
+		record(result, FAIL_RESULT, reason);
 	}
 
 	@Override
@@ -258,7 +263,7 @@ public class ExtentReportManager implements ITestListener, ISuiteListener {
 	/** Everything before the first pipe of the description, e.g. "TC_80". */
 	private String testCaseId(ITestResult result) {
 		String description = result.getMethod().getDescription();
-		if (description != null && description.contains("|")) {
+		if (description != null && description.contains(DESCRIPTION_SEPARATOR)) {
 			return description.substring(0, description.indexOf('|')).trim();
 		}
 		return result.getMethod().getMethodName();
@@ -267,7 +272,7 @@ public class ExtentReportManager implements ITestListener, ISuiteListener {
 	/** Everything after the first pipe of the description. */
 	private String testCaseTitle(ITestResult result) {
 		String description = result.getMethod().getDescription();
-		if (description != null && description.contains("|")) {
+		if (description != null && description.contains(DESCRIPTION_SEPARATOR)) {
 			return description.substring(description.indexOf('|') + 1).trim();
 		}
 		return description == null ? result.getMethod().getMethodName() : description.trim();
@@ -292,7 +297,7 @@ public class ExtentReportManager implements ITestListener, ISuiteListener {
 				new java.util.LinkedHashMap<String, ResultRecord>();
 		synchronized (RESULTS) {
 			for (ResultRecord record : RESULTS) {
-				unique.put(record.testCaseId + "|" + record.browser, record);
+				unique.put(record.testCaseId + DESCRIPTION_SEPARATOR + record.browser, record);
 			}
 		}
 		List<ResultRecord> ordered = new ArrayList<ResultRecord>(unique.values());
@@ -339,9 +344,9 @@ public class ExtentReportManager implements ITestListener, ISuiteListener {
 		int fail = 0;
 		int skip = 0;
 		for (ResultRecord record : ordered) {
-			if ("Pass".equals(record.status)) {
+			if (PASS_RESULT.equals(record.status)) {
 				pass++;
-			} else if ("Fail".equals(record.status)) {
+			} else if (FAIL_RESULT.equals(record.status)) {
 				fail++;
 			} else {
 				skip++;
@@ -403,8 +408,8 @@ public class ExtentReportManager implements ITestListener, ISuiteListener {
 		int rowNum = 1;
 		for (ResultRecord record : ordered) {
 			Row row = sheet.createRow(rowNum);
-			CellStyle statusStyle = "Pass".equals(record.status) ? passStyle
-					: "Fail".equals(record.status) ? failStyle : skipStyle;
+			CellStyle statusStyle = PASS_RESULT.equals(record.status) ? passStyle
+					: FAIL_RESULT.equals(record.status) ? failStyle : skipStyle;
 
 			writeCell(row, 0, String.valueOf(rowNum), bodyStyle);
 			writeCell(row, 1, record.testCaseId, bodyStyle);
@@ -438,7 +443,7 @@ public class ExtentReportManager implements ITestListener, ISuiteListener {
 	private CellStyle titleStyle(Workbook workbook) {
 		CellStyle style = workbook.createCellStyle();
 		Font font = workbook.createFont();
-		font.setFontName("Arial");
+		font.setFontName(REPORT_FONT);
 		font.setBold(true);
 		font.setFontHeightInPoints((short) 14);
 		style.setFont(font);
@@ -448,7 +453,7 @@ public class ExtentReportManager implements ITestListener, ISuiteListener {
 	private CellStyle headerStyle(Workbook workbook) {
 		CellStyle style = workbook.createCellStyle();
 		Font font = workbook.createFont();
-		font.setFontName("Arial");
+		font.setFontName(REPORT_FONT);
 		font.setBold(true);
 		font.setColor(IndexedColors.WHITE.getIndex());
 		style.setFont(font);
@@ -462,7 +467,7 @@ public class ExtentReportManager implements ITestListener, ISuiteListener {
 	private CellStyle bodyStyle(Workbook workbook) {
 		CellStyle style = workbook.createCellStyle();
 		Font font = workbook.createFont();
-		font.setFontName("Arial");
+		font.setFontName(REPORT_FONT);
 		style.setFont(font);
 		style.setWrapText(true);
 		style.setVerticalAlignment(org.apache.poi.ss.usermodel.VerticalAlignment.TOP);
@@ -473,7 +478,7 @@ public class ExtentReportManager implements ITestListener, ISuiteListener {
 	private CellStyle statusStyle(Workbook workbook, IndexedColors colour) {
 		CellStyle style = workbook.createCellStyle();
 		Font font = workbook.createFont();
-		font.setFontName("Arial");
+		font.setFontName(REPORT_FONT);
 		font.setBold(true);
 		style.setFont(font);
 		style.setFillForegroundColor(colour.getIndex());

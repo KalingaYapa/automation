@@ -1,14 +1,16 @@
 # Automation test case catalog
 
-This catalog describes the test cases in `src/test/java/e_testCases`. Names and IDs match the TestNG descriptions. Expected results describe the assertions, not a claim that every test has passed.
+All 29 application cases follow the PDF naming/grouping standard and are enabled. Run them with `mvn clean test`; see [the restructuring guide](framework-restructuring.md).
+
+This catalog describes the application tests in `src/test/java/documenteditor` and `src/test/java/portal`, followed by archived starter examples. Names and IDs match the TestNG descriptions. Expected results describe the assertions, not a claim that every test has passed.
 
 ## Maintenance
 
 Whenever a test is added, update this file in the same change with its ID, name, objective and expected result. Keep entries aligned when tests are renamed, changed, disabled or removed. Include the automation method so each entry can be traced to its implementation. New application test IDs should continue after TC_29; the sample template has its own overlapping IDs.
 
-## Document editor — Ab_DocumentEditorTC
+## Document editor — DocumentEditor1TestCase
 
-Each enabled test starts with a fresh browser, logs in, selects IATA, opens Authoring File List and opens the configured document editor. TC_01–TC_12 and TC_16 are currently commented out; TC_13–TC_15, TC_17–TC_19 and TC_25–TC_29 are enabled. A suite must include a test for it to execute.
+Each enabled test starts with a fresh browser, logs in, selects IATA, opens Authoring File List and opens the configured document editor. All 29 application cases (24 editor cases and 5 portal cases) are enabled; no application tests are commented out. A suite must include a test for it to execute.
 
 The title-bar cases check labels and availability only. They do not perform Save, Reset File, Validate File or Check In. Formatting and paragraph-split tests undo their changes and do not save the document.
 
@@ -17,7 +19,7 @@ The title-bar cases check labels and availability only. They do not perform Save
 | TC_01 | Verify the document title is visible | `verifyDocumentTitleIsDisplayed` | Confirm the title bar is shown. | The document title is visible. |
 | TC_02 | Verify the document title text | `verifyDocumentTitleText` | Confirm the correct document is open. | The title equals expectedDocumentTitle from config.properties. |
 | TC_03 | Verify the saved time is visible | `verifySavedTimeIsDisplayed` | Confirm the saved-time indicator is shown. | The Last Saved indicator is visible. |
-| TC_04 | Verify the saved time format | `verifySavedTimeFormat` | Check the saved-time display format. | The indicator matches savedTimePattern: Last Saved followed by a 12-hour time and AM/PM. |
+| TC_04 | Verify saved time is blank initially or has the expected format | `verifySavedTimeFormat` | Check the initially blank saved-time state or the format of an available timestamp. | Blank is valid before a save. A nonblank value must match savedTimePattern: Last Saved followed by a 12-hour time and AM/PM. |
 | TC_05 | Verify the Save button label | `verifySaveButtonLabel` | Check the Save control label. | The visible button reads Save. |
 | TC_06 | Verify the Save button is enabled | `verifySaveButtonIsEnabled` | Check Save is available for the editable document. | Save is enabled. |
 | TC_07 | Verify the Reset File button label | `verifyResetButtonLabel` | Check the Reset File control label. | The visible button reads Reset File. |
@@ -52,7 +54,7 @@ These five cases are enabled and are selected by `PortalNavigation.xml`. Each pe
 | TC_23 | Verify the allocated document is listed | `verifyTargetDocumentIsListed` | Find the configured document allocation in Authoring File List. | The matching allocation row displays expectedDocumentTitle. |
 | TC_24 | Verify Edit opens the allocated document editor | `verifyEditOpensDocumentEditor` | Click Edit for the configured document allocation. | The editor opens with a ready editing area and a title matching expectedDocumentTitle. |
 
-## Editor formatting and lists — Ab_DocumentEditorTC
+## Editor formatting and lists — DocumentEditor1TestCase
 
 TC_25–TC_29 use the existing editor setup, page object and test groups. Each starts with a fresh browser and opens the configured document. Run these five cases with `mvn clean test -DsuiteXmlFile=FormattingTests.xml`; they are also included by `DocumentEditor.xml`. These cases undo their own changes and never save or accept tracked changes.
 
@@ -64,9 +66,9 @@ TC_25–TC_29 use the existing editor setup, page object and test groups. Each s
 | TC_28 | Verify applying an unordered list to a paragraph | `verifyApplyingUnorderedListToParagraph` | Click plain text in the configured paragraph, initially outside a list, and click the bulleted-list button. | The unordered-list button becomes active and the unchanged paragraph text belongs to a list item inside an unordered list (ul). Undo restores a non-list paragraph. |
 | TC_29 | Verify applying an ordered list to a paragraph | `verifyApplyingOrderedListToParagraph` | Click plain text in the configured paragraph, initially outside a list, and click the numbered-list button. | The ordered-list button becomes active and the unchanged paragraph text belongs to a list item inside an ordered list (ol). Undo restores a non-list paragraph. |
 
-## Sample template — Aa_SampleTC
+## Archived sample template — Aa_SampleTC
 
-These five starter examples use a sample screen, not the IATA editor. Their TC_01–TC_05 IDs overlap with the editor IDs; identify them by class and automation method.
+These five starter examples are archived as `.java.example` reference files under `docs/templates` and are excluded from compilation and execution. They use a sample screen, not the IATA editor. Their TC_01–TC_05 IDs overlap with the editor IDs; identify them by class and automation method.
 
 | ID | Test case name | Automation method | Objective | Expected result |
 | --- | --- | --- | --- | --- |

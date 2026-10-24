@@ -1,4 +1,4 @@
-package c_basePage;
+package d_loginpage;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -15,7 +15,7 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.Select;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
-import a_testBase.BaseClass;
+import a_testbase.BaseClass;
 
 /**
  * Shared behaviour for every page object. Extend it, declare the locators of

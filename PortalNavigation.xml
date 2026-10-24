@@ -6,11 +6,10 @@
         <listener class-name="b_utilities.AnnotationTransfer" />
     </listeners>
     <parameter name="browser" value="chrome" />
-    <test name="Login and navigate to the editor">
+    <test name="RetryMultipleFailedTestcases">
+        <groups><run><include name="Portal" /></run></groups>
         <classes>
-            <class name="e_testCases.Ac_LoginTC" />
-            <class name="e_testCases.Ad_PortalTC" />
-            <class name="e_testCases.Ae_AuthoringFileListTC" />
+            <class name="portal.Portal1TestCase" />
         </classes>
     </test>
 </suite>

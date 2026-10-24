@@ -5,7 +5,7 @@ import java.util.Arrays;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import a_testBase.BaseClass;
+import a_testbase.BaseClass;
 import b_utilities.ReusableMethods;
 import d_pageObjects.Aa_SamplePage;
 

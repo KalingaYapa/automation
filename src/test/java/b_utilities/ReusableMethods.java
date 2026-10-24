@@ -2,18 +2,17 @@ package b_utilities;
 
 import java.util.List;
 
-import a_testBase.BaseClass;
+import a_testbase.BaseClass;
 
-/**
- * Small helpers shared by the test classes.
- *
- * <p>
- * The login journey itself lives in {@code d_pageObjects} and
- * runs from {@link BaseClass#setup(String)}. What is shared here is list
- * checking, so each test method stays at one action and one assertion.
- * </p>
- */
+/** Shared navigation and reusable value checks. */
 public class ReusableMethods extends BaseClass {
+
+    /** Login and open the configured allocation once for each editor test. */
+    public static documenteditor.DocumentEditorPageObjects1 loginAndSearchFileClickEdit() {
+        return new d_loginpage.HomePage(getDriver()).login()
+                .selectProject(getConfig("portalProject"))
+                .openAuthoringFileList().findTargetFile().openTargetFile();
+    }
 
 	/** Common timestamp shape: YYYY-MM-DD HH:MM:SS. Adjust to the application under test. */
 	public static final String TIMESTAMP_PATTERN = "\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}.*";

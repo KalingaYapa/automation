@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<suite name="Application Regression" parallel="none" thread-count="1">
+    <listeners>
+        <listener class-name="b_utilities.ExtentReportManager" />
+        <listener class-name="b_utilities.AnnotationTransfer" />
+    </listeners>
+    <parameter name="browser" value="chrome" />
+    <test name="RetryMultipleFailedTestcases">
+        <groups>
+            <run>
+                <include name="DocumentEditor" />
+                <include name="P1-DocumentEditor" />
+                <include name="P2-DocumentEditor" />
+                <include name="P3-DocumentEditor" />
+                <include name="P4-DocumentEditor" />
+                <include name="Portal" />
+                <include name="P1-Portal" />
+                <include name="P2-Portal" />
+                <include name="P3-Portal" />
+                <include name="P4-Portal" />
+            </run>
+        </groups>
+        <classes>
+            <class name="portal.Portal1TestCase" />
+            <class name="documenteditor.DocumentEditor1TestCase" />
+        </classes>
+    </test>
+</suite>

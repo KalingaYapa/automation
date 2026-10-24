@@ -1,4 +1,4 @@
-package d_pageObjects;
+package documenteditor;
 
 import java.util.List;
 import org.openqa.selenium.By;
@@ -6,10 +6,16 @@ import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
-import c_basePage.BasePage;
+import d_loginpage.BasePage;
 
 /** Editor checks and focused formatting actions. */
-public class Ab_DocumentEditorPage extends BasePage {
+public class DocumentEditorPageObjects1 extends BasePage {
+    private static final String SPACE = " ";
+    private static final String CLASS_ATTRIBUTE = "class";
+    private static final String WHITESPACE_PATTERN = "\\s+";
+    private static final String ARIA_DISABLED_ATTRIBUTE = "aria-disabled";
+    private static final String HEADING_WORD_CONFIG = "headingWord";
+
     @FindBy(css = "#titlebarFileName > span:first-child")
     private WebElement documentTitle;
     @FindBy(id = "showSavedTime")
@@ -23,7 +29,7 @@ public class Ab_DocumentEditorPage extends BasePage {
     @FindBy(id = "btn-checkin-file")
     private WebElement checkInButton;
 
-    public Ab_DocumentEditorPage(WebDriver driver) {
+    public DocumentEditorPageObjects1(WebDriver driver) {
         super(driver);
     }
 
@@ -92,7 +98,7 @@ public class Ab_DocumentEditorPage extends BasePage {
     private static final By BOLD_BUTTON = By.cssSelector("a.cke_button.cke_button__bold");
 
     private WebElement findVisibleBoldWord() {
-        String expected = normalizeEditorText(a_testBase.BaseClass.getConfig("boldSampleText"));
+        String expected = normalizeEditorText(a_testbase.BaseClass.getConfig("boldSampleText"));
         List<WebElement> matches = new java.util.ArrayList<>();
         for (WebElement element : findElementsNow(BOLD_TEXT)) {
             if (element.isDisplayed() && expected.equals(normalizeEditorText(element.getText()))) {
@@ -191,7 +197,7 @@ public class Ab_DocumentEditorPage extends BasePage {
                     + "const clean=t=>t.replace(/[\\u200B\\u2063\\uFEFF]/g,'').replace(/\\s+/g,' ').trim();"
                     + "return arguments[1] ? (!s.isCollapsed && clean(s.toString()) === clean(arguments[2]))"
                     + " : s.isCollapsed;",
-                    word, doubleClick, a_testBase.BaseClass.getConfig("boldSampleText"))));
+                    word, doubleClick, a_testbase.BaseClass.getConfig("boldSampleText"))));
         } finally {
             getDriver.switchTo().defaultContent();
         }
@@ -209,9 +215,9 @@ public class Ab_DocumentEditorPage extends BasePage {
                 if (!button.isDisplayed()) {
                     continue;
                 }
-                String classes = " " + getAttributeValue(button, "class").replaceAll("\\s+", " ") + " ";
+                String classes = SPACE + getAttributeValue(button, CLASS_ATTRIBUTE).replaceAll(WHITESPACE_PATTERN, SPACE) + SPACE;
                 boolean enabled = button.isEnabled()
-                        && !"true".equalsIgnoreCase(button.getAttribute("aria-disabled"))
+                        && !"true".equalsIgnoreCase(button.getAttribute(ARIA_DISABLED_ATTRIBUTE))
                         && !classes.contains(" cke_button_disabled ");
                 String expected = expectedActive ? " cke_button_on " : " cke_button_off ";
                 String opposite = expectedActive ? " cke_button_off " : " cke_button_on ";
@@ -241,7 +247,7 @@ public class Ab_DocumentEditorPage extends BasePage {
             WebElement match = null;
             for (WebElement heading : findElementsNow(HEADING)) {
                 if (heading.isDisplayed() && normalizeEditorText(heading.getText())
-                        .equals(normalizeEditorText(a_testBase.BaseClass.getConfig("editorHeadingText")))) {
+                        .equals(normalizeEditorText(a_testbase.BaseClass.getConfig("editorHeadingText")))) {
                     if (match != null) {
                         throw new IllegalStateException("Multiple matching editor headings");
                     }
@@ -254,7 +260,7 @@ public class Ab_DocumentEditorPage extends BasePage {
 
     /** Select the exact heading word through the editor's own selection model. */
     public void selectHeadingWord() {
-        String expected = normalizeEditorText(a_testBase.BaseClass.getConfig("headingWord"));
+        String expected = normalizeEditorText(a_testbase.BaseClass.getConfig(HEADING_WORD_CONFIG));
         try {
             WebElement heading = locateHeadingInEditor();
             js.executeScript(FIND_HEADING_WORD + """
@@ -306,7 +312,7 @@ public class Ab_DocumentEditorPage extends BasePage {
                     + "const bold=node.parentElement.closest('[data-element=\"b\"][data-style=\"bold\"],b,strong');"
                     + "return !!bold && root.contains(bold)"
                     + " && parseInt(getComputedStyle(node.parentElement).fontWeight,10)>=700;",
-                    heading, a_testBase.BaseClass.getConfig("headingWord")));
+                    heading, a_testbase.BaseClass.getConfig(HEADING_WORD_CONFIG)));
         } finally {
             getDriver.switchTo().defaultContent();
         }
@@ -328,11 +334,11 @@ public class Ab_DocumentEditorPage extends BasePage {
         WebElement undo = mywait.withMessage("Undo must be visible and enabled before clicking")
                 .until(driver -> {
                     for (WebElement button : findElementsNow(UNDO_BUTTON)) {
-                        String classes = " " + getAttributeValue(button, "class").replaceAll("\\s+", " ") + " ";
+                        String classes = SPACE + getAttributeValue(button, CLASS_ATTRIBUTE).replaceAll(WHITESPACE_PATTERN, SPACE) + SPACE;
                         // An anchor's isEnabled() alone does not check ARIA-disabled state.
                         // cke_button_off is a normal enabled state for this command.
                         if (button.isDisplayed() && button.isEnabled()
-                                && "false".equalsIgnoreCase(button.getAttribute("aria-disabled"))
+                                && "false".equalsIgnoreCase(button.getAttribute(ARIA_DISABLED_ATTRIBUTE))
                                 && !classes.contains(" cke_button_disabled ")) {
                             return button;
                         }
@@ -359,7 +365,7 @@ public class Ab_DocumentEditorPage extends BasePage {
                     + "return [root.textContent.replace(/\\u200b/g,'').trim(),"
                     + "getComputedStyle(node.parentElement).fontWeight,"
                     + "String(!!bold && root.contains(bold))];",
-                    heading, a_testBase.BaseClass.getConfig("headingWord"));
+                    heading, a_testbase.BaseClass.getConfig(HEADING_WORD_CONFIG));
         } finally {
             getDriver.switchTo().defaultContent();
         }
@@ -383,8 +389,8 @@ public class Ab_DocumentEditorPage extends BasePage {
         getDriver.switchTo().defaultContent();
         WebElement button = mywait.until(driver -> findElementsNow(locator).stream()
                 .filter(element -> element.isDisplayed() && element.isEnabled()
-                        && !"true".equalsIgnoreCase(element.getAttribute("aria-disabled"))
-                        && !element.getAttribute("class").contains("cke_button_disabled"))
+                        && !"true".equalsIgnoreCase(element.getAttribute(ARIA_DISABLED_ATTRIBUTE))
+                        && !element.getAttribute(CLASS_ATTRIBUTE).contains("cke_button_disabled"))
                 .findFirst().orElse(null));
         clickElement(button);
     }
@@ -393,7 +399,7 @@ public class Ab_DocumentEditorPage extends BasePage {
         getDriver.switchTo().defaultContent();
         mywait.until(driver -> findElementsNow(locator).stream()
                 .anyMatch(button -> button.isDisplayed()
-                        && java.util.Arrays.asList(button.getAttribute("class").split("\\s+"))
+                        && java.util.Arrays.asList(button.getAttribute(CLASS_ATTRIBUTE).split(WHITESPACE_PATTERN))
                                 .contains("cke_button_on")));
     }
 
@@ -405,7 +411,7 @@ public class Ab_DocumentEditorPage extends BasePage {
                     + "if(!format || !root.contains(format))return false;"
                     + "for(let e=node.parentElement;e && root.contains(e);e=e.parentElement){"
                     + "if(getComputedStyle(e).getPropertyValue(arguments[3]).includes(arguments[4]))return true;}"
-                    + "return false;", heading, a_testBase.BaseClass.getConfig("headingWord"),
+                    + "return false;", heading, a_testbase.BaseClass.getConfig(HEADING_WORD_CONFIG),
                     selector, property, expectedValue));
         } finally {
             getDriver.switchTo().defaultContent();
@@ -467,7 +473,7 @@ public class Ab_DocumentEditorPage extends BasePage {
 
     private WebElement locateTargetParagraphOrListItem() {
         return locateInEditor(() -> {
-            String expected = normalizeEditorText(a_testBase.BaseClass.getConfig("editorParagraphText"));
+            String expected = normalizeEditorText(a_testbase.BaseClass.getConfig("editorParagraphText"));
             return findElementsNow(PARAGRAPH_OR_LIST_ITEM).stream()
                     .filter(element -> element.isDisplayed()
                             && expected.equals(normalizeEditorText(element.getText())))
@@ -524,13 +530,13 @@ public class Ab_DocumentEditorPage extends BasePage {
     /** Ignore editor marker characters, preserving meaningful spaces and punctuation. */
     private String normalizeEditorText(String text) {
         return text.replace("\u200B", "").replace("\u2063", "").replace("\uFEFF", "")
-                .replaceAll("[\\s\\p{Z}]+", " ").trim();
+                .replaceAll("[\\s\\p{Z}]+", SPACE).trim();
     }
 
     private WebElement locateParagraphInEditor() {
         return locateInEditor(() -> {
             WebElement match = null;
-            String expected = normalizeEditorText(a_testBase.BaseClass.getConfig("editorParagraphText"));
+            String expected = normalizeEditorText(a_testbase.BaseClass.getConfig("editorParagraphText"));
             for (WebElement paragraph : findElementsNow(PARAGRAPH)) {
                 if (paragraph.isDisplayed() && normalizeEditorText(paragraph.getText()).equals(expected)) {
                     if (match != null) {
@@ -545,7 +551,7 @@ public class Ab_DocumentEditorPage extends BasePage {
 
     public void clickTargetParagraph() {
         try {
-            clickPlainBlockWord(locateParagraphInEditor(), a_testBase.BaseClass.getConfig("paragraphSelectionWord"));
+            clickPlainBlockWord(locateParagraphInEditor(), a_testbase.BaseClass.getConfig("paragraphSelectionWord"));
         } finally {
             getDriver.switchTo().defaultContent();
         }
@@ -553,7 +559,7 @@ public class Ab_DocumentEditorPage extends BasePage {
 
     public void clickTargetHeading() {
         try {
-            clickPlainBlockWord(locateHeadingInEditor(), a_testBase.BaseClass.getConfig("headingSelectionWord"));
+            clickPlainBlockWord(locateHeadingInEditor(), a_testbase.BaseClass.getConfig("headingSelectionWord"));
         } finally {
             getDriver.switchTo().defaultContent();
         }
@@ -716,7 +722,7 @@ public class Ab_DocumentEditorPage extends BasePage {
                     if (!selection.isCollapsed || selection.anchorNode !== position.node
                             || selection.anchorOffset !== position.offset)
                         throw new Error('Caret was not placed at the split boundary');
-                    """, paragraph, a_testBase.BaseClass.getConfig("paragraphSplitBefore"));
+                    """, paragraph, a_testbase.BaseClass.getConfig("paragraphSplitBefore"));
             action.sendKeys(Keys.ENTER).perform();
         } finally {
             getDriver.switchTo().defaultContent();

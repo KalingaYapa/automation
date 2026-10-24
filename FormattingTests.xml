@@ -6,9 +6,10 @@
         <listener class-name="b_utilities.AnnotationTransfer" />
     </listeners>
     <parameter name="browser" value="chrome" />
-    <test name="TC_25 to TC_29">
+    <test name="RetryMultipleFailedTestcases">
+        <groups><run><include name="DocumentEditor" /></run></groups>
         <classes>
-            <class name="e_testCases.Ab_DocumentEditorTC">
+            <class name="documenteditor.DocumentEditor1TestCase">
                 <methods>
                     <include name="verifyApplyingItalicToHeadingWord" />
                     <include name="verifyApplyingUnderlineToHeadingWord" />

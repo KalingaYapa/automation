@@ -1,396 +1,44 @@
 # Document editor tests
 
-This guide describes 24 editor checks covering title-bar controls, formatting, Undo/Redo, Selected Element, paragraph splitting and lists. They do not click Save,
-Reset File, Validate File, or Check In. Enabled state means the HTML control accepts
-interaction; it does not prove saving, resetting, validation, or check-in works.
+The 24 editor cases are in `documenteditor.DocumentEditor1TestCase`. Their actions and checks live in `documenteditor.DocumentEditorPageObjects1`, in the same lowercase feature package. All editor cases are enabled; detailed IDs, objectives and expected results are in [the catalog](test-case-catalog.md).
 
-| Manual ID | Automation method | Expected result |
-| --- | --- | --- |
-| TC_01 | verifyDocumentTitleIsDisplayed | Document title is visible |
-| TC_02 | verifyDocumentTitleText | Title matches expectedDocumentTitle |
-| TC_03 | verifySavedTimeIsDisplayed | Saved-time indicator is visible |
-| TC_04 | verifySavedTimeFormat | Text matches Last Saved followed by a 12-hour time and AM/PM |
-| TC_05 | verifySaveButtonLabel | Visible button reads Save |
-| TC_06 | verifySaveButtonIsEnabled | Save is enabled |
-| TC_07 | verifyResetButtonLabel | Visible button reads Reset File |
-| TC_08 | verifyResetButtonIsEnabled | Reset File is enabled |
-| TC_09 | verifyValidateButtonLabel | Visible button reads Validate File |
-| TC_10 | verifyValidateButtonIsEnabled | Validate File is enabled |
-| TC_11 | verifyCheckInButtonLabel | Visible button reads Check In |
-| TC_12 | verifyCheckInButtonIsEnabled | Check In is enabled |
-| TC_13 | verifyBoldIsActiveAfterSingleClick | Caret is inside Depending and Bold is active |
-| TC_14 | verifyBoldIsActiveAfterDoubleClick | Depending is selected and Bold is active |
-| TC_15 | verifyApplyingBoldToHeadingWord | Selected heading word gains bold markup and Bold becomes active; Undo restores formatting |
-| TC_16 | verifyUndoRestoresHeadingFormatting | Undo restores original heading text, font weight and bold markup state; Bold is off |
-| TC_17 | verifyParagraphSelectionShowsParagraphType | Selected Element changes from heading to p |
-| TC_18 | verifyHeadingSelectionShowsHeadingType | Selected Element changes from p to heading |
-| TC_19 | verifyEnterIncreasesParagraphCount | Enter increases the target section paragraph-row count by one |
+## Scope
 
-## Files and framework flow
+- TC_01–TC_04: title visibility/text and saved-time visibility/format. The saved-time value may initially be blank; any displayed timestamp must have the configured 12-hour format.
+- TC_05–TC_12: Save, Reset File, Validate File and Check In labels and enabled state. These tests do not click those buttons or verify persistence, reset, schema validation or check-in.
+- TC_13–TC_14: existing Bold state after a native single/double click on Depending.
+- TC_15–TC_16: apply explicit Bold to the heading word and verify Undo restores it.
+- TC_17–TC_18: Selected Element changes between heading and p after native plain-text clicks.
+- TC_19: Enter splits the target paragraph; the target section's paragraph count increases by one, then Undo restores the original count.
+- TC_25–TC_26: apply Italic and Underline; check toolbar state and actual rendered formatting/markup, then Undo.
+- TC_27: apply Bold, Undo, Redo and verify Bold is restored; final Undo removes the change.
+- TC_28–TC_29: convert the target paragraph to unordered/ordered list items; verify toolbar and list structure, then Undo.
 
-`DocumentEditor.xml` selects only `Ab_DocumentEditorTC`, running sequentially.
-Inherited `BaseClass.setup()` opens a fresh browser and the portal/login URL before
-each method. The subclass `openAllocatedEditor()` setup then logs in, selects IATA,
-opens Authoring File List, finds the configured allocation and opens its editor.
-Each test creates `Ab_DocumentEditorPage`, which uses the supplied element IDs and
-explicit visibility waits. Tests contain assertions; locators remain in the page object.
-The framework's existing listeners generate HTML and Excel reports.
-`Master.xml` and the sample tests are unchanged.
+## Setup and lifecycle
 
-## Before running against the sandbox
+Set your local sandbox username/password and appURL in `src/test/resources/config.properties`; never commit credentials. Confirm the configured IATA project, allocation path, document title, heading text/word and paragraph text match the saved sandbox document. The formatting word must initially lack explicit Bold, Italic and Underline. The paragraph must initially be outside a list. Use an editable allocation and avoid simultaneous edits to that document.
 
-1. Use an editable sandbox document and a test account permitted to use all four buttons.
-   Enabled-state expectations come from the supplied HTML, where the buttons have no
-   disabled attribute. Confirm these expectations with your lead for your role and
-   document status. The saved-time test expects an already-saved document and the shown
-   English, 12-hour time format; it does not verify persistence or timestamp freshness.
-2. Set `appURL` in `src/test/resources/config.properties` to the portal/login URL,
-   such as `https://ia-portal-sandbox.innodata.com/login`. An explicit `-DappURL`
-   overrides `SANDBOX_URL`, which otherwise overrides the file's URL.
-3. Fill in `username` and `password` locally in config.properties; do not commit their
-   values. Check `portalProject`, `portalFileSearch`, `editorFileEditPath`, and
-   `expectedDocumentTitle` identify the intended sandbox allocation.
-4. Authentication and navigation are performed independently before every test by
-   `Ab_DocumentEditorTC.openAllocatedEditor()`. There is no dependency on running
-   PortalNavigation.xml first, or on your personal browser's existing login.
-5. For this cloud environment, the application domain must be allowed in environment
-   settings. Activate tools with `source /workspace/.onboarding/env.sh`. The current
-   BaseClass supports optional cloud properties `-Dheadless=yes`,
-   `-DchromeBinary=/workspace/.onboarding/tools/debian/usr/lib/chromium/chromium`,
-   `-DchromeNoSandbox=true`, and `-DchromeDisableDevShmUsage=true`.
-   These Linux-container settings are not needed on a normal desktop installation.
+`a_testbase.BaseClass` creates a fresh browser before each test and closes it after the method. Editor `@BeforeMethod` calls `ReusableMethods.loginAndSearchFileClickEdit()`, which uses `d_loginpage.HomePage` for login → IATA → Authoring File List → configured allocation Edit. Navigation happens once per test, including each independently selected case.
 
-Compile without launching browsers:
+The page object waits for CKEditor readiness and supports its editing iframe. Invisible editor markers and nested formatting spans are handled when matching text. The configured paragraph currently contains `system.By` without a space; keep configuration aligned with the actual saved text.
 
-```bash
-mvn test-compile
-```
+Selected Element checks read `#selectedElmName` in the main page; they do not open or modify the dropdown. They click direct plain-text words (`paragraphSelectionWord=flight`, `headingSelectionWord=Flight`) to avoid selecting nested Bold or the adjacent heading number. Bold/Italic/Underline active state requires the command's `cke_button_on` state, not merely an enabled icon. Undo/Redo wait for enabled commands before native clicks.
 
-Run only the new suite after the prerequisites are complete:
+Editing cases reverse only their own changes with Undo. They never Save, Reset File or Accept Change. A failing precondition should be investigated rather than bypassed.
+
+## Run
 
 ```bash
 mvn clean test -DsuiteXmlFile=DocumentEditor.xml
-```
-
-The pom.xml explicitly ignores test failures, so BUILD SUCCESS alone is insufficient. Inspect `target/surefire-reports/testng-results.xml`, `reports/ExtentReport.html`,
-and `reports/ExcelReport.xlsx`. The full catalog has 19 cases; the current branch enables TC_13–TC_15 and TC_19
-(the other cases remain commented out). Check executed counts, failures and skips; distinguish
-setup failures from assertion failures. Do not run the sample suite against this editor.
-
-## Validation scope
-
-The locators and expectations are based on user-supplied HTML. Compilation can verify
-Java integration, but cannot establish that the live editor, permissions, login, or
-persistence work. The sandbox endpoint is reachable but redirects to /login without authentication.
-The application tests have not been validated against the sandbox.
-The remaining editor features will be added after their HTML and behavior are available.
-
-## Bold formatting selection checks
-
-Both cases start from the existing bold word `Depending` (`boldSampleText` in config).
-TC_13 single-clicks the word and waits for a collapsed caret inside its span.
-TC_14 double-clicks it and waits for a non-collapsed selection containing exactly
-`Depending` after normalizing editor markers and whitespace. This prevents a click in the wrong place
-from being reported as a successful selection. Neither case applies Bold or saves.
-
-The page object finds visible `span[data-element='b'][data-style='bold']` elements by
-the configured word, avoiding user IDs, change timestamps, session IDs and generated
-reference numbers. A duplicate matching word in the same editing context fails with
-a message requesting a paragraph-scoped locator.
-
-Inline editing and the standard CKEditor 4 `iframe.cke_wysiwyg_frame` are supported.
-Selection is inspected in the editing context; the driver then returns to the main
-page for the toolbar. Nested frames or a toolbar inside another frame require the
-actual frame markup before adapting these locators.
-
-The supplied full Bold button HTML confirms `a.cke_button.cke_button__bold` as
-its locator. The generated `cke_23` ID is deliberately avoided. The button is active
-when its class tokens contain `cke_button_on` and do not contain `cke_button_off`.
-It must also be enabled, without `aria-disabled=true` or `cke_button_disabled`.
-The icon span and `aria-disabled=false` alone do not establish active formatting.
-
-The locator and state rule now match the supplied full button HTML. Editor frame
-structure and native selection behavior still require validation against the live
-sandbox. The live cases require authentication and have not been executed there.
-
-## Applying Bold to the heading (TC_15)
-
-Use a disposable sandbox document: this test changes formatting temporarily, then
-uses the editor's Undo button. It never clicks Save. Confirm whether your application
-autosaves before running editing tests against shared documents; Undo cannot roll
-back server-side history or notifications.
-
-`editorHeadingText` identifies the supplied heading without its generated reference
-number. `headingWord=Transmit` specifies the exact word to select. A single click
-only places a caret, so it does not reliably format an existing word. The test uses CKEditor 4's selection API to select the exact configured heading
-word and synchronizes its selection model before clicking the real Bold toolbar
-button. It verifies the browser selection contains exactly that word. Local simple
-editor fixtures use a DOM Range fallback; formatting is never applied by JavaScript.
-
-Before clicking Bold, the test requires `cke_button_off` and no explicit bold
-markup on the word. A heading can already look bold due to CSS, so appearance alone
-is not the baseline. If the toolbar is already on, the test fails its precondition
-without clicking Bold; choose a genuinely unformatted word/fixture instead of silently
-toggling the existing formatting off.
-
-After the click, the test waits for `cke_button_on`, explicit bold markup covering
-the selected word (`span[data-element=b][data-style=bold]`, `b`, or `strong`), and a
-computed font weight of at least 700. Thus the toolbar alone cannot make this test
-pass. Undo then must remove the new explicit bold markup. The flow assumes the
-confirmed CKEditor Undo button `a.cke_button.cke_button__undo`. This test does not check saved
-formatting persistence.
-
-Validation for this addition: Maven test compilation passed. A local Selenium
-fixture exercised the actual page-object flow in both inline and standard iframe
-editing contexts: exact word selection, off-state precondition, Bold click, toolbar
-and document-format checks, and Undo all passed. This fixture simulates toolbar
-behavior; it does not establish that the authenticated application works.
-
-## Undo operation (TC_16)
-
-This independent case selects `headingWord`, requires Bold off, and captures the
-heading's text, the word's computed font weight, and its explicit bold-markup state.
-It applies Bold and verifies that the edit actually took effect before testing Undo.
-It then clicks the standard CKEditor Undo button, waits for the added bold markup
-to disappear, reselects the word and waits for Bold off. The assertion compares the
-post-Undo text and formatting snapshot with the original snapshot.
-
-The case never saves or resets the file. If setup fails after applying Bold, it
-attempts cleanup with Undo. Once the Undo under test has been attempted, it does
-not issue another Undo: that could revert unrelated earlier document history.
-Use a disposable sandbox document, especially if autosave is enabled. This covers
-undoing a formatting edit; undoing typing, multiple edits, and Redo are separate cases.
-The supplied full Undo button HTML confirms the locator
-`a.cke_button.cke_button__undo`. The generated ID `cke_14` is deliberately avoided.
-Before clicking, the helper waits for visibility, `aria-disabled="false"`, and absence
-of the `cke_button_disabled` class. `cke_button_off` is allowed: Undo is a command,
-so that class does not mean it is disabled. These checks apply to TC_16 and to
-formatting-test cleanup.
-
-Validation: compilation passed. The local inline and iframe fixtures also passed
-restoration-snapshot comparison and the Bold-off toolbar check after Undo. This
-validates the automation helpers against simulated editor behavior, not the live
-application's undo implementation.
-
-Confirmed Undo-state update: compilation and local inline/iframe checks passed,
-including a fixture where Undo starts ARIA-disabled and becomes enabled after the
-Bold edit. The helper waits for that transition before clicking. Live application
-execution remains unverified.
-
-## Selected Element synchronisation (TC_17 and TC_18)
-
-TC_17 first clicks the configured heading and waits for `heading`, then clicks the
-configured paragraph and asserts `p`. TC_18 establishes `p` first, then clicks the
-heading and asserts `heading`. Establishing the opposite initial state prevents an
-already-correct dropdown label from hiding a failed click. Neither case opens or
-changes the dropdown or document content.
-
-The confirmed display locator is `#selectedElmName` on the main page. This custom
-dropdown is not a native select. Editor text clicks support inline and standard
-CKEditor iframe contexts, use a native single-click at the centre of a configured plain-text word,
-and verify a collapsed caret directly inside the chosen block. Nested formatting
-spans are excluded: clicking the bold “Close” would select `b`, not `p`.
-`paragraphSelectionWord=flight` and `headingSelectionWord=Flight` avoid formatted
-children and the boundary beside the heading number. Explicit waits then handle
-the label update on the main page.
-
-`editorParagraphText` holds the exact supplied sentence. The provided paragraph
-HTML confirms `div[data-element='p']`; its generated `inno_ref` is deliberately
-avoided. Visible text and configured text are compared after removing U+200B,
-U+2063 and U+FEFF editor markers, collapsing whitespace (including non-breaking
-spaces), and trimming. Punctuation and actual wording still must match; missing
-sentence spaces are not silently invented. Duplicate matching elements fail
-explicitly. These cases still require
-the existing authenticated editor setup.
-
-Validation: compilation and four local browser-fixture checks passed: heading to p
-and p to heading, each in inline and iframe editing contexts, including asynchronous
-label updates. The fixture uses the supplied paragraph and dropdown display markup.
-This verifies the helper flow against simulated behavior; the authenticated sandbox
-has not been tested.
-
-## Paragraph split count (TC_19)
-
-This case intentionally verifies only Document Structure counts. It records the
-number of direct paragraph rows in the target section as N, places the caret before
-`paragraphSplitBefore=By this action`, sends a native Enter, waits for N+1, and
-asserts that count. It does not check the resulting paragraph texts or their row
-identities. A section with only one paragraph changes 1 to 2; existing other
-paragraphs are included in the baseline, so the general expectation is N to N+1.
-
-The supplied structure HTML confirms `#content-scroll`, `li.contentBlockListItem`,
-and `name='p'`. The configured heading's `inno_ref` is matched to the heading li ID
-(not the duplicate wrapper ID) to locate its nearest `ul.contentBlockList`. Only
-`:scope > div.contentBlockListItemParent > li.contentBlockListItem[name='p']`
-leaf entries are counted, plus direct accordion headers whose
-`.contentBlockAcordianItemName` label is `p`. Paragraphs with bold/inline children
-use the accordion layout, so counting only li rows would miss them. Headers are
-scoped to `:scope > div.accordion > div.contentBlockAccordian > h2.contentBlockAccordianHeader`.
-Nested subsections/list paragraphs are excluded; the section
-must be expanded and the original paragraph must still contain the configured
-full sentence before the test. The configured heading and paragraph must belong
-to the same section.
-
-Caret placement uses the browser Selection/Range API after a native click focuses
-the paragraph. Enter is sent as a WebDriver key action, rather than inserting markup
-with JavaScript. The boundary is searched across all descendant text nodes after
-removing editor markers and collapsing whitespace. A character-to-DOM-position map
-places the caret before the actual boundary even when bold spans split the phrase
-across nodes. Empty or repeated boundaries fail explicitly. The code reads text and
-sets a collapsed selection; it does not rewrite the paragraph's HTML.
-
-Cleanup clicks Undo only when Enter was sent and the count changed, then waits for
-the baseline count. It does not blindly undo when no structure change was observed.
-No Save or Reset is clicked; use a disposable document if the application autosaves.
-The count-only assertion cannot prove the text was preserved or the split occurred
-at the correct position. Those are deliberately outside this test's requested scope.
-
-Validation: compilation passed. Local inline and iframe fixtures passed paragraph
-count transitions 2 to 3 to 2, including cleanup, with a nested paragraph excluded
-from the section count. The fixture simulates Enter and structure synchronization;
-this does not verify the authenticated application's split behavior.
-
-## Paragraph lookup and split-boundary fix
-
-The supplied paragraph includes U+2063 invisible separators and formatting spans
-inside the split phrase. Paragraph matching now normalizes those markers and
-whitespace on both sides of the comparison. The split helper maps normalized text
-back to the original text nodes, so `By this action` may cross multiple spans.
-The text-click helper also skips marker-only characters when choosing a visible
-character to click. Existing duplicate-paragraph protection remains in place.
-
-TC_19 still asserts only the Document Structure count N to N+1 and restores the
-baseline with Undo. No hard-coded paragraph reference, missing-space workaround,
-longer timeout, or changes to the document's content are used to make lookup pass.
-
-Validation: compilation passed. Six local Selenium fixtures passed: plain text,
-U+2063-marked text with nested bold spans, and mixed/non-breaking whitespace, each
-in inline and iframe editors. Fixtures checked the actual split boundary as a
-regression check, the N to N+1 count, and Undo restoration. The production TC_19
-assertion remains count-only. Live sandbox execution is not claimed.
-
-## Live TC_19 verification — 2026-10-22
-
-Authenticated Chromium navigation reached IATA, Authoring File List, and the existing
-edit link for order 4 / allocation 33. TLS verification stayed enabled; no certificate
-warning was bypassed. A local browser harness supplied the authenticated driver and
-invoked the existing `verifyEnterIncreasesParagraphCount()` test method. This was a
-single live method check, not a run of the entire TestNG suite or BaseClass login flow.
-
-The first attempt stopped before Enter because the saved paragraph still contained
-`system.By`, while the repository's example data expected `system. By`. The retry
-used an external local config matching the saved text; the document was not edited
-to satisfy that precondition. Users should set `editorParagraphText` to their actual
-saved fixture. Normalization intentionally does not ignore missing punctuation spaces.
-
-Live inspection also revealed that paragraphs with bold children use accordion
-headers instead of li rows. The counting helper now includes both direct paragraph
-layouts. Compilation and six local inline/iframe regression cases with accordion
-paragraphs passed before the live retry.
-
-The live test method passed. A DOM observer recorded counts **4 -> 5 -> 4**, including
-Undo cleanup. After reloading without clicking Save, the saved paragraph text matched
-the original, including its raw U+2063 marker sequence. No Save, Reset or Check In
-was clicked. The browser was closed afterward. This verifies TC_19 for the inspected
-saved fixture; it does not validate the other editor test cases.
-
-The committed `editorParagraphText` now matches the verified saved fixture with
-`system.By`, so that live check no longer requires a configuration override for
-this text difference. If the saved document changes, update the test data to match.
-
-## Automatic editor setup
-
-`Ab_DocumentEditorTC.openAllocatedEditor()` is a subclass BeforeMethod. TestNG runs
-it after the inherited BaseClass browser setup and before each editor test, including
-when a single method is selected. Existing teardown still closes the browser if
-navigation or the test fails. Page objects remain local, with no shared session or
-method-order dependency. Login uses the existing username/password config keys.
-
-Validation of automatic setup: compilation and two live read-only editor methods
-(`verifyDocumentTitleIsDisplayed` and `verifyDocumentTitleText`) passed with no
-failures or skips. TestNG ran BaseClass browser setup and openAllocatedEditor
-before each method. A private temporary config supplied credentials and was removed
-afterward; committed credential values remain blank. The full 19-test suite was
-not rerun for this setup change, and no document content was edited.
-
-## TC_13–TC_15 live failure fixes — 2026-10-23
-
-All three original failures were reproduced. The Bold-word lookup had not reused
-the paragraph normalizer, so a leading U+2063 in `Depending` prevented a match.
-Both element matching and selected-text checks now normalize U+200B/U+2063/U+FEFF
-and whitespace; heading matching uses the same normalization.
-
-The outer editor header can become visible before CKEditor finishes initializing
-its editing document. Early gestures could be lost during iframe initialization.
-`openTargetFile()` and editor-context lookup now wait for CKEditor status `ready`,
-an editable document containing the heading, loaded fonts and a stable document
-identity across polls. This does not require iframe readyState `complete`: CKEditor
-can be ready while that document is still `interactive`.
-
-TC_13 retains a native single-click and checks the caret is inside the bold word.
-TC_14 retains a native double-click and verifies the selected word and toolbar on
-state. TC_15 selects the heading word through CKEditor's own range/selection API,
-then clicks the actual Bold button. The assertion still requires both toolbar on
-and actual bold markup/rendered weight, followed by the existing Undo cleanup.
-No assertion was removed or changed to accept a failed selection.
-
-Validation: compilation passed; local inline and iframe formatting/Undo checks
-passed; the actual TC_13, TC_14 and TC_15 methods then passed against the live sandbox
-through the committed login/navigation setup: **3 passed, 0 failed, 0 skipped**.
-Credentials were supplied in a private temporary configuration, removed afterward.
-No Save, Reset or Check In action was performed. The full editor suite was not rerun.
-
-To rerun only these three tests with normal listeners and per-method editor setup:
-
-```bash
-mvn test -DsuiteXmlFile=BoldTests.xml
-```
-
-The focused suite selects exactly the same three method names verified live. Keep
-username/password and the portal URL configured locally as described above.
-
-The remote `af72684` commit disabled TC_01–TC_18 while this fix was in progress.
-It was preserved during integration, with only the requested TC_13–TC_15 re-enabled.
-TC_01–TC_12 and TC_16 remain commented out; TC_17–TC_19 are enabled.
-`BoldTests.xml` selects the three enabled Bold methods explicitly.
-
-After integrating the remote test-comment changes and re-enabling the requested
-methods, the actual committed `BoldTests.xml` was run against the sandbox with the
-normal report listeners: **3 passed, 0 failed, 0 skipped**. This independently
-confirmed the earlier three-method pass. Undo cleanup completed; no Save was clicked.
-
-## Run only Selected Element checks
-
-TC_17 and TC_18 are enabled and can be run independently:
-
-```bash
+mvn clean test -DsuiteXmlFile=BoldTests.xml
 mvn clean test -DsuiteXmlFile=ElementSelectionTests.xml
-```
-
-These checks read `#selectedElmName` after real clicks and do not edit or save the document.
-
-Sandbox validation: the focused suite completed with 2 passed, 0 failed and 0 skipped.
-
-## Additional formatting and list cases (TC_25–TC_29)
-
-The existing editor class now includes five cases for applying Italic, applying
-Underline, Redo after undoing Bold, converting a paragraph to an unordered list,
-and converting a paragraph to an ordered list. They use the existing login and
-navigation setup and the same page object structure. See the
-[test case catalog](test-case-catalog.md) for objectives and expected results.
-
-```bash
 mvn clean test -DsuiteXmlFile=FormattingTests.xml
 ```
 
-Each checks the toolbar state and actual document formatting or list structure.
-Tests require an editable sandbox file, a heading word without the tested
-formatting, and a target paragraph outside any list. Cleanup uses Undo; tests
-do not click Save, Reset File or Accept Change. The normal `DocumentEditor.xml`
-suite includes these enabled methods too.
+`DocumentEditor.xml` runs all 24 editor cases. The other suites select TC_13–TC_15, TC_17–TC_18 and TC_25–TC_29 respectively. `mvn clean test` defaults to `testng.xml` and runs all 29 application cases, including the five portal cases. `Master.xml` is an equivalent compatibility suite.
 
-Sandbox validation of `FormattingTests.xml`: 5 passed, 0 failed, 0 skipped,
-including Undo cleanup. Compilation also passed. SonarQube analysis was not run.
+Groups are `DocumentEditor` plus `P2-DocumentEditor` for High or `P3-DocumentEditor` for Medium. All suites use the standard `RetryMultipleFailedTestcases` test block and updated class references. Retry remains attached by the framework listener, with retry limit zero by default.
 
-For local prerequisites, configuration, terminal commands and report checks, see
-[Run editor formatting tests from the terminal](run-formatting-tests-terminal.md).
+Maven now fails when tests fail. Check executed counts, failures, skipped tests and setup errors in `target/surefire-reports/` and `reports/ExtentReport.html`. Logs are in `logs/Automation.log` and screenshots in `screenshots/`. A CDP-version warning alone is not evidence that a WebDriver test failed.
+
+See [terminal instructions](run-formatting-tests-terminal.md), [the restructuring guide](framework-restructuring.md) and [the writing standard](test-writing-guide.md).
