@@ -2,7 +2,7 @@
 
 All 29 application cases follow the PDF naming/grouping standard and are enabled. Run them with `mvn clean test`; see [the restructuring guide](framework-restructuring.md).
 
-This catalog describes the application tests in `src/test/java/documenteditor` and `src/test/java/portal`, followed by archived starter examples. Names and IDs match the TestNG descriptions. Expected results describe the assertions, not a claim that every test has passed.
+This catalog describes the application tests in `src/test/java/documenteditor` and `src/test/java/portal`, followed by archived starter examples. All 29 application cases include INFO start/result/finish logs and DEBUG step/assertion/cleanup logs, enabled in the terminal and logs/Automation.log. Names and IDs match the TestNG descriptions. Expected results describe the assertions, not a claim that every test has passed.
 
 ## Maintenance
 

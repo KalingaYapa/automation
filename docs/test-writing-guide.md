@@ -135,14 +135,17 @@ Use parameterised messages: `logger.info("Paragraph count: expected={}, actual={
 
 Read a result once after waiting, store it in a local variable, then use that value in both the log and assertion. The sample calls `isNewParaDispalyedInVe()` twice; avoid that because the UI may change between calls and each call may perform another wait.
 
-The current `src/test/resources/log4j2.xml` uses root level `info`, so `logger.debug(...)` messages are hidden. To capture detailed steps, add package loggers inside `<Loggers>` before `<Root>`:
+`src/test/resources/log4j2.xml` now enables DEBUG for `documenteditor`, `portal` and `d_loginpage`, while keeping the root level at INFO to limit library noise:
 
 ```xml
 <Logger name="documenteditor" level="debug" />
-<Logger name="para" level="debug" />
+<Logger name="portal" level="debug" />
+<Logger name="d_loginpage" level="debug" />
 ```
 
-Use the actual module package(s) containing the new tests and pages. Add a `portal` logger when diagnosing portal cases. These inherit the existing console and file appenders. Logs are written to `logs/Automation.log`. `debug=yes` in `config.properties` controls the existing BasePage debug helper; it does not enable Log4j2 DEBUG messages. No logging configuration is changed by this guide.
+All 29 application tests have their own class logger and explicit start/result/assertion/finish logs. Action and cleanup steps log before and after completion. Shared HomePage logs navigation without credential values. The editor page logs native input, toolbar commands and frame entry/restoration. Central report listeners log test and setup/cleanup failures at ERROR. Successful finish messages appear after assertions and required cleanup, never from a finally block.
+
+The same INFO/DEBUG messages appear in the terminal and `logs/Automation.log`. Add a matching DEBUG package logger when introducing a new feature package. The legacy `debug=yes` flag controls only BasePage's optional debug helper; it is not required for the explicit test/page logs. Read results once into local variables and reuse them in logs and assertions.
 
 ## 4. Test method template using existing editor actions
 

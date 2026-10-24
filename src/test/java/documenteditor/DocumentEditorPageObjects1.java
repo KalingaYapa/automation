@@ -4,12 +4,18 @@ import java.util.List;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 import d_loginpage.BasePage;
 
 /** Editor checks and focused formatting actions. */
 public class DocumentEditorPageObjects1 extends BasePage {
+    private static final Logger LOGGER = LogManager.getLogger(DocumentEditorPageObjects1.class);
+
+    private static final String SWITCHING_TO_MAIN_MSG = "Switching to main document";
+    private static final String SWITCHED_TO_MAIN_MSG = "Switched to main document";
     private static final String SPACE = " ";
     private static final String CLASS_ATTRIBUTE = "class";
     private static final String WHITESPACE_PATTERN = "\\s+";
@@ -28,6 +34,12 @@ public class DocumentEditorPageObjects1 extends BasePage {
     private WebElement validateButton;
     @FindBy(id = "btn-checkin-file")
     private WebElement checkInButton;
+
+    private void switchToMainDocument(WebDriver driver) {
+        LOGGER.debug(SWITCHING_TO_MAIN_MSG);
+        driver.switchTo().defaultContent();
+        LOGGER.debug(SWITCHED_TO_MAIN_MSG);
+    }
 
     public DocumentEditorPageObjects1(WebDriver driver) {
         super(driver);
@@ -119,7 +131,7 @@ public class DocumentEditorPageObjects1 extends BasePage {
 
     /** Wait beyond the outer header: CKEditor can replace its initial iframe document. */
     public void waitForEditorReady() {
-        getDriver.switchTo().defaultContent();
+        switchToMainDocument(getDriver);
         js.executeScript("window.__automationEditorDocument = null;");
         mywait.withMessage("CKEditor must be ready with a stable, editable document")
                 .until(driver -> Boolean.TRUE.equals(js.executeScript("""
@@ -151,19 +163,21 @@ public class DocumentEditorPageObjects1 extends BasePage {
     private WebElement locateInEditor(java.util.function.Supplier<WebElement> findElement) {
         waitForEditorReady();
         return mywait.until(driver -> {
-            driver.switchTo().defaultContent();
+            switchToMainDocument(driver);
             WebElement word = findElement.get();
             if (word != null) {
                 return word;
             }
             for (WebElement frame : findElementsNow(EDITOR_FRAMES)) {
                 if (frame.isDisplayed()) {
+                    LOGGER.debug("Switching to CKEditor editing frame");
                     driver.switchTo().frame(frame);
+                    LOGGER.debug("Switched to CKEditor editing frame");
                     word = findElement.get();
                     if (word != null) {
                         return word;
                     }
-                    driver.switchTo().defaultContent();
+                    switchToMainDocument(driver);
                 }
             }
             return null;
@@ -184,9 +198,13 @@ public class DocumentEditorPageObjects1 extends BasePage {
         try {
             WebElement word = locateBoldWordInEditor();
             if (doubleClick) {
+                LOGGER.debug("Double-clicking existing bold text");
                 action.doubleClick(word).perform();
+                LOGGER.debug("Double-clicked existing bold text");
             } else {
+                LOGGER.debug("Single-clicking existing bold text");
                 action.click(word).perform();
+                LOGGER.debug("Single-clicked existing bold text");
             }
             // Check native selection in the editing context before inspecting the toolbar.
             // This reads the selection; it does not manufacture one with JavaScript.
@@ -199,7 +217,7 @@ public class DocumentEditorPageObjects1 extends BasePage {
                     + " : s.isCollapsed;",
                     word, doubleClick, a_testbase.BaseClass.getConfig("boldSampleText"))));
         } finally {
-            getDriver.switchTo().defaultContent();
+            switchToMainDocument(getDriver);
         }
     }
 
@@ -209,7 +227,7 @@ public class DocumentEditorPageObjects1 extends BasePage {
     }
 
     private boolean waitForBoldFormattingState(boolean expectedActive) {
-        getDriver.switchTo().defaultContent();
+        switchToMainDocument(getDriver);
         return mywait.until(driver -> {
             for (WebElement button : findElementsNow(BOLD_BUTTON)) {
                 if (!button.isDisplayed()) {
@@ -293,7 +311,7 @@ public class DocumentEditorPageObjects1 extends BasePage {
                     + " && s.toString().replace(/[\\u200B\\u2063\\uFEFF]/g,'').trim()===arguments[1];",
                     heading, expected)));
         } finally {
-            getDriver.switchTo().defaultContent();
+            switchToMainDocument(getDriver);
         }
     }
 
@@ -314,13 +332,15 @@ public class DocumentEditorPageObjects1 extends BasePage {
                     + " && parseInt(getComputedStyle(node.parentElement).fontWeight,10)>=700;",
                     heading, a_testbase.BaseClass.getConfig(HEADING_WORD_CONFIG)));
         } finally {
-            getDriver.switchTo().defaultContent();
+            switchToMainDocument(getDriver);
         }
     }
 
     public void applyBoldToSelection() {
-        getDriver.switchTo().defaultContent();
+        switchToMainDocument(getDriver);
+        LOGGER.debug("Clicking Bold toolbar button");
         clickElement(BOLD_BUTTON);
+        LOGGER.debug("Clicked Bold toolbar button");
     }
 
     public boolean waitForHeadingWordToBecomeBold() {
@@ -330,7 +350,7 @@ public class DocumentEditorPageObjects1 extends BasePage {
 
     /** Native click on the confirmed Undo command, shared by editing tests. */
     private void clickUndo() {
-        getDriver.switchTo().defaultContent();
+        switchToMainDocument(getDriver);
         WebElement undo = mywait.withMessage("Undo must be visible and enabled before clicking")
                 .until(driver -> {
                     for (WebElement button : findElementsNow(UNDO_BUTTON)) {
@@ -345,7 +365,9 @@ public class DocumentEditorPageObjects1 extends BasePage {
                     }
                     return null;
                 });
+        LOGGER.debug("Clicking enabled Undo toolbar button");
         clickElement(undo);
+        LOGGER.debug("Clicked Undo toolbar button");
     }
 
     /** Undo only this test's formatting command; never save or reset the file. */
@@ -367,7 +389,7 @@ public class DocumentEditorPageObjects1 extends BasePage {
                     + "String(!!bold && root.contains(bold))];",
                     heading, a_testbase.BaseClass.getConfig(HEADING_WORD_CONFIG));
         } finally {
-            getDriver.switchTo().defaultContent();
+            switchToMainDocument(getDriver);
         }
     }
 
@@ -386,17 +408,19 @@ public class DocumentEditorPageObjects1 extends BasePage {
     private static final By PARAGRAPH_OR_LIST_ITEM = By.cssSelector("[data-element='p'],[data-element='li'],p,li");
 
     private void clickEnabledCommand(By locator) {
-        getDriver.switchTo().defaultContent();
+        switchToMainDocument(getDriver);
         WebElement button = mywait.until(driver -> findElementsNow(locator).stream()
                 .filter(element -> element.isDisplayed() && element.isEnabled()
                         && !"true".equalsIgnoreCase(element.getAttribute(ARIA_DISABLED_ATTRIBUTE))
                         && !element.getAttribute(CLASS_ATTRIBUTE).contains("cke_button_disabled"))
                 .findFirst().orElse(null));
+        LOGGER.debug("Clicking enabled editor toolbar command: {}", locator);
         clickElement(button);
+        LOGGER.debug("Clicked editor toolbar command: {}", locator);
     }
 
     private void waitForCommandActive(By locator) {
-        getDriver.switchTo().defaultContent();
+        switchToMainDocument(getDriver);
         mywait.until(driver -> findElementsNow(locator).stream()
                 .anyMatch(button -> button.isDisplayed()
                         && java.util.Arrays.asList(button.getAttribute(CLASS_ATTRIBUTE).split(WHITESPACE_PATTERN))
@@ -414,7 +438,7 @@ public class DocumentEditorPageObjects1 extends BasePage {
                     + "return false;", heading, a_testbase.BaseClass.getConfig(HEADING_WORD_CONFIG),
                     selector, property, expectedValue));
         } finally {
-            getDriver.switchTo().defaultContent();
+            switchToMainDocument(getDriver);
         }
     }
 
@@ -490,7 +514,7 @@ public class DocumentEditorPageObjects1 extends BasePage {
                     + "return list ? (list.getAttribute('data-element') || list.tagName.toLowerCase()) : '';",
                     paragraph);
         } finally {
-            getDriver.switchTo().defaultContent();
+            switchToMainDocument(getDriver);
         }
     }
 
@@ -553,7 +577,7 @@ public class DocumentEditorPageObjects1 extends BasePage {
         try {
             clickPlainBlockWord(locateParagraphInEditor(), a_testbase.BaseClass.getConfig("paragraphSelectionWord"));
         } finally {
-            getDriver.switchTo().defaultContent();
+            switchToMainDocument(getDriver);
         }
     }
 
@@ -561,7 +585,7 @@ public class DocumentEditorPageObjects1 extends BasePage {
         try {
             clickPlainBlockWord(locateHeadingInEditor(), a_testbase.BaseClass.getConfig("headingSelectionWord"));
         } finally {
-            getDriver.switchTo().defaultContent();
+            switchToMainDocument(getDriver);
         }
     }
 
@@ -585,8 +609,10 @@ public class DocumentEditorPageObjects1 extends BasePage {
                 + "const cx=Math.floor((Math.max(0,h.left)+Math.min(innerWidth,h.right))/2);"
                 + "const cy=Math.floor((Math.max(0,h.top)+Math.min(innerHeight,h.bottom))/2);"
                 + "return [Math.floor(b.x+b.width/2)-cx,Math.floor(b.y+b.height/2)-cy];", element, word);
+        LOGGER.debug("Clicking measured text position inside the editor block");
         action.moveToElement(element, ((Number) point.get(0)).intValue(),
                 ((Number) point.get(1)).intValue()).click().perform();
+        LOGGER.debug("Clicked measured editor text position; checking caret");
         mywait.until(driver -> Boolean.TRUE.equals(js.executeScript(
                 "const s=window.getSelection();return !!s&&s.rangeCount>0&&s.isCollapsed"
                 + "&&s.anchorNode.nodeType===Node.TEXT_NODE"
@@ -606,21 +632,23 @@ public class DocumentEditorPageObjects1 extends BasePage {
                 + "const cx=Math.floor((Math.max(0,h.left)+Math.min(innerWidth,h.right))/2);"
                 + "const cy=Math.floor((Math.max(0,h.top)+Math.min(innerHeight,h.bottom))/2);"
                 + "return [Math.floor(b.x+b.width/2)-cx,Math.floor(b.y+b.height/2)-cy];", element);
+        LOGGER.debug("Clicking measured text position inside the editor block");
         action.moveToElement(element, ((Number) point.get(0)).intValue(),
                 ((Number) point.get(1)).intValue()).click().perform();
+        LOGGER.debug("Clicked measured editor text position; checking caret");
         mywait.until(driver -> Boolean.TRUE.equals(js.executeScript(
                 "const s=window.getSelection();return !!s && s.rangeCount>0 && s.isCollapsed"
                 + " && arguments[0].contains(s.anchorNode);", element)));
     }
 
     public String getSelectedElementType() {
-        getDriver.switchTo().defaultContent();
+        switchToMainDocument(getDriver);
         waitForElementToBeVisible(SELECTED_ELEMENT_NAME);
         return getText(SELECTED_ELEMENT_NAME);
     }
 
     public void waitForSelectedElementType(String expectedType) {
-        getDriver.switchTo().defaultContent();
+        switchToMainDocument(getDriver);
         mywait.withMessage("Selected Element should change to " + expectedType)
                 .until(driver -> expectedType.equals(getSelectedElementType()));
     }
@@ -642,10 +670,10 @@ public class DocumentEditorPageObjects1 extends BasePage {
                     throw new IllegalStateException("Target heading has no inno_ref for structure scoping");
                 }
             } finally {
-                getDriver.switchTo().defaultContent();
+                switchToMainDocument(getDriver);
             }
         }
-        getDriver.switchTo().defaultContent();
+        switchToMainDocument(getDriver);
         return mywait.until(driver -> {
             for (WebElement row : findElementsNow(STRUCTURE_HEADINGS)) {
                 if (structureHeadingReference.equals(row.getAttribute("id")) && row.isDisplayed()) {
@@ -723,9 +751,11 @@ public class DocumentEditorPageObjects1 extends BasePage {
                             || selection.anchorOffset !== position.offset)
                         throw new Error('Caret was not placed at the split boundary');
                     """, paragraph, a_testbase.BaseClass.getConfig("paragraphSplitBefore"));
+            LOGGER.debug("Pressing Enter at the configured paragraph split point");
             action.sendKeys(Keys.ENTER).perform();
+            LOGGER.debug("Pressed Enter at the paragraph split point");
         } finally {
-            getDriver.switchTo().defaultContent();
+            switchToMainDocument(getDriver);
         }
     }
 

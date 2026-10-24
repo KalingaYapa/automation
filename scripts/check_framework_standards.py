@@ -27,6 +27,9 @@ for path in SOURCE.rglob('*.java'):
     clean = re.sub(r'/\*.*?\*/', '', source, flags=re.S)
     for annotation, method in re.findall(r'@Test\((.*?)\)\s*public void (\w+)\(', clean, re.S):
         assert re.fullmatch(r'verify[A-Z][A-Za-z0-9]*', method), method
+        assert f'LOGGER.info(STARTING_TEST_MSG, "{method}")' in source, (method, 'missing start log')
+        assert f'LOGGER.info(FINISHED_TEST_MSG, "{method}")' in source, (method, 'missing finish log')
+
         assert not re.search(r'retryAnalyzer\s*=|\bpriority\s*=|enabled\s*=\s*false', annotation), method
         group_values = re.search(r'groups\s*=\s*\{(.*?)\}', annotation, re.S).group(1)
         groups = [constants.get(g.strip(), g.strip().strip('"')) for g in group_values.split(',')]
@@ -54,4 +57,6 @@ for suite in ['testng.xml', 'Master.xml']:
     selected = {c.get('name') for c in ET.parse(ROOT / suite).iter('class')}
     expected_classes = {name for name in classes if name.endswith('TestCase')}
     assert selected == expected_classes, (suite, selected, expected_classes)
-print(f'PASS: lowercase packages, standard feature classes, {len(methods)} unique enabled cases matching the catalog, two standard groups per case, and all suite references.')
+loggers = {node.get('name'): node.get('level') for node in ET.parse(ROOT / 'src/test/resources/log4j2.xml').iter('Logger')}
+assert all(loggers.get(name) == 'debug' for name in ['documenteditor', 'portal', 'd_loginpage'])
+print(f'PASS: naming, groups, suite references, {len(methods)} enabled catalog cases with start/finish logs, and DEBUG package configuration.')

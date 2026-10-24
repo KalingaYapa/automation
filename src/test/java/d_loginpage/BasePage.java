@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.openqa.selenium.By;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebDriver;
@@ -34,6 +36,8 @@ import a_testbase.BaseClass;
  * </p>
  */
 public class BasePage {
+    private static final Logger LOGGER = LogManager.getLogger(BasePage.class);
+
 
 	public WebDriver getDriver;
 	public WebDriverWait mywait;
@@ -54,7 +58,7 @@ public class BasePage {
 	/** Prints a debug line when debug=yes. */
 	public static void debug(String message) {
 		if (DEBUG) {
-			System.out.println("[DEBUG][" + Thread.currentThread().getName() + "] " + message);
+			LOGGER.debug("[{}] {}", Thread.currentThread().getName(), message);
 		}
 	}
 

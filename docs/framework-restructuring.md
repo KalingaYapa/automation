@@ -83,3 +83,25 @@ credentials were removed afterward. TC_04 passed with the permitted initial blan
 state. A nonblank timestamp remains subject to the configured format assertion.
 Local users can run the complete lifecycle with `mvn clean test` after configuring
 their sandbox URL and account.
+
+## Logging follow-up — 24 October 2026
+
+The missing guidance-required logs are now implemented across all 29 tests and
+shared navigation/editor actions. Class-specific Log4j2 loggers emit INFO start,
+observed result and successful finish, with DEBUG action/assertion/frame/cleanup
+steps. The three application packages have DEBUG enabled for terminal and file
+output. The central listener emits ERROR for test and configuration failures.
+
+Validation of the logging change:
+
+- Compilation and the standards check passed.
+- Full Maven default suite: **29 passed, 0 failures, 0 errors, 0 skips**.
+- Every application method had exactly one start and one successful finish in
+  both console output and `logs/Automation.log`.
+- DEBUG assertion/navigation/frame logs were present, and all editing cases
+  logged Undo cleanup before their successful finish.
+- Log contents were checked for the test account's username/password values;
+  neither was present. Generated test credentials were restored afterward.
+- An isolated controlled-failure check verified test/setup ERROR messages and
+  the absence of a false PASSED finish. This check is outside application suites.
+- SonarQube analysis was not run.

@@ -9,6 +9,9 @@
 		</File>
 	</Appenders>
 	<Loggers>
+        <Logger name="documenteditor" level="debug" />
+        <Logger name="portal" level="debug" />
+        <Logger name="d_loginpage" level="debug" />
 		<Root level="info">
 			<AppenderRef ref="Console" />
 			<AppenderRef ref="File" />

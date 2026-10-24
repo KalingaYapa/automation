@@ -39,3 +39,12 @@ Reports: `reports/ExtentReport.html`, `reports/ExcelReport.xlsx`, `target/surefi
 Follow [the test-writing guide](docs/test-writing-guide.md), including lowercase module packages, numbered class pairs, globally unique `verify...` methods and exactly two groups: module and `P<n>-<Module>` from the manual-sheet priority. Update [the test case catalog](docs/test-case-catalog.md) with every test change. Locators and WebDriver actions belong in page objects; tests contain assertions. Retry is attached by the framework listener.
 
 See [terminal instructions](docs/run-formatting-tests-terminal.md) and [the restructuring guide](docs/framework-restructuring.md) for commands and migration details.
+
+## Step logging
+
+All application tests log INFO start, observed results and successful finish. DEBUG
+logs before/after actions, assertions, frame changes and Undo cleanup are enabled
+for `documenteditor`, `portal` and `d_loginpage`. Console and
+`logs/Automation.log` receive the same messages; no extra Maven flag is needed.
+Failure listeners emit ERROR logs for test and setup/cleanup exceptions. Credentials
+are never logged. See [the logging guidance](docs/test-writing-guide.md#3-logging-requirements).

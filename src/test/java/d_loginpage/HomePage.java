@@ -10,12 +10,16 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebDriver;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.WebDriverException;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 
 /** Shared login, project selection and allocation navigation. */
 public class HomePage extends BasePage {
+    private static final Logger LOGGER = LogManager.getLogger(HomePage.class);
+
     private static final By ROWS = By.cssSelector("#dataTables tbody tr");
     @FindBy(id = "email")
     private WebElement email;
@@ -48,9 +52,14 @@ public class HomePage extends BasePage {
         String username = requiredConfig("username");
         String secret = requiredConfig("password");
         try {
+            LOGGER.debug("Entering sandbox username");
             enterText(email, username);
+            LOGGER.debug("Entered sandbox username");
+            LOGGER.debug("Submitting username to open password step");
             clickElement(submit);
+            LOGGER.debug("Username submitted; entering sandbox password");
             enterText(password, secret);
+            LOGGER.debug("Entered sandbox password; submitting login");
             clickElement(submit);
         } catch (WebDriverException exception) {
             // Selenium command diagnostics can contain typed input; do not expose the cause.
@@ -58,7 +67,9 @@ public class HomePage extends BasePage {
                     + exception.getClass().getSimpleName() + ")");
         }
         HomePage portal = new HomePage(getDriver);
+        LOGGER.debug("Login submitted; waiting for authenticated portal");
         portal.waitForPortal();
+        LOGGER.debug("Authenticated portal is ready");
         return portal;
     }
 
@@ -77,7 +88,9 @@ public class HomePage extends BasePage {
     }
 
     public HomePage selectProject(String project) {
+        LOGGER.debug("Opening project dropdown");
         clickElement(projectDropdown);
+        LOGGER.debug("Project dropdown opened; finding project: {}", project);
         WebElement group = projectDropdown.findElement(By.xpath(
                 "ancestor::div[contains(concat(' ',normalize-space(@class),' '),' btn-group ')][1]"));
         WebElement option = mywait.until(driver -> {
@@ -88,15 +101,21 @@ public class HomePage extends BasePage {
             }
             return null;
         });
+        LOGGER.debug("Selecting project: {}", project);
         option.click();
+        LOGGER.debug("Selected project option; waiting for selection confirmation");
         mywait.until(driver -> project.equals(getSelectedProject()));
+        LOGGER.debug("Project selection confirmed: {}", project);
         return this;
     }
 
     public HomePage openAuthoringFileList() {
+        LOGGER.debug("Opening Authoring File List");
         clickElement(authoringFileList);
+        LOGGER.debug("Authoring File List clicked; waiting for table");
         HomePage page = new HomePage(getDriver);
         page.waitForFileList();
+        LOGGER.debug("Authoring File List table is ready");
         return page;
     }
 
@@ -131,10 +150,14 @@ public class HomePage extends BasePage {
     }
 
     public HomePage findTargetFile() {
+        LOGGER.debug("Filtering the allocated document by configured file name");
         enterText(fileNameFilter, BaseClass.getConfig("portalFileSearch"));
         // DataTables applies this column filter on Enter, not on each keystroke.
+        LOGGER.debug("Pressing Enter to apply file-name filter");
         fileNameFilter.sendKeys(Keys.ENTER);
+        LOGGER.debug("File-name filter applied; waiting for target allocation");
         targetRow();
+        LOGGER.debug("Target allocation row located");
         return this;
     }
 
@@ -158,7 +181,9 @@ public class HomePage extends BasePage {
             }
             return null;
         });
+        LOGGER.debug("Clicking Edit for the configured allocation");
         edit.click();
+        LOGGER.debug("Edit clicked; waiting for editor window");
         mywait.until(driver -> {
             Set<String> opened = new HashSet<>(driver.getWindowHandles());
             opened.removeAll(previousWindows);
@@ -166,13 +191,17 @@ public class HomePage extends BasePage {
                 throw new IllegalStateException("More than one window opened from the Edit action");
             }
             if (!opened.isEmpty()) {
+                LOGGER.debug("Switching to newly opened editor window");
                 driver.switchTo().window(opened.iterator().next());
+                LOGGER.debug("Switched to editor window");
             }
             return BaseClass.getConfig("editorFileEditPath").equals(URI.create(driver.getCurrentUrl()).getPath());
         });
         DocumentEditorPageObjects1 editor = new DocumentEditorPageObjects1(getDriver);
         editor.waitForElementToBeVisible(By.id("titlebarFileName"));
+        LOGGER.debug("Waiting for CKEditor readiness");
         editor.waitForEditorReady();
+        LOGGER.debug("Allocated document editor is ready");
         return editor;
     }
 

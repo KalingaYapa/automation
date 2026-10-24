@@ -197,3 +197,20 @@ Check report timestamps so you are reading the current run. `clean` removes `tar
 | CDP version warning | Standard WebDriver actions may still run; inspect the actual failure trace rather than assuming this warning caused it. |
 
 For full objectives and expected results, see [the test case catalog](test-case-catalog.md). For other editor suites, see [the editor test guide](document-editor-tests.md).
+
+## Step logs
+
+Explicit test/page logs are enabled by default; no extra Maven flag is required.
+The console and `logs/Automation.log` show INFO test start, observed results and
+successful finish, with DEBUG messages for actions, assertions, frame changes and
+Undo cleanup. Credential values are never logged. The file appender uses append
+mode, so use the test name and timestamp to identify the latest run.
+
+```bash
+tail -f logs/Automation.log
+```
+
+Use a second terminal in the project root to follow the log while tests run;
+press Ctrl+C in that terminal to stop following it. ERROR messages identify test
+or setup/cleanup failures; a failed assertion or failed cleanup does not print a
+successful finish message.

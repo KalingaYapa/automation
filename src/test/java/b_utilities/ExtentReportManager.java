@@ -30,6 +30,9 @@ import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
 import org.testng.ISuite;
+import org.testng.IConfigurationListener;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.testng.ISuiteListener;
 import org.testng.ITestListener;
 import org.testng.ITestResult;
@@ -66,7 +69,9 @@ import a_testbase.BaseClass;
  * the value held in the manual sheet's Automation ID column.
  * </p>
  */
-public class ExtentReportManager implements ITestListener, ISuiteListener {
+public class ExtentReportManager implements ITestListener, ISuiteListener, IConfigurationListener {
+    private static final Logger LOGGER = LogManager.getLogger(ExtentReportManager.class);
+
     private static final String PASS_RESULT = "Pass";
     private static final String FAIL_RESULT = "Fail";
     private static final String DESCRIPTION_SEPARATOR = "|";
@@ -198,6 +203,8 @@ public class ExtentReportManager implements ITestListener, ISuiteListener {
 
 	@Override
 	public synchronized void onTestFailure(ITestResult result) {
+        LOGGER.error("Test failed: {}.{}", result.getTestClass().getName(),
+                result.getMethod().getMethodName(), result.getThrowable());
 		ExtentTest test = EXTENT_TEST.get();
 		String reason = result.getThrowable() == null ? "" : String.valueOf(result.getThrowable().getMessage());
 
@@ -210,6 +217,12 @@ public class ExtentReportManager implements ITestListener, ISuiteListener {
 		}
 		record(result, FAIL_RESULT, reason);
 	}
+
+    @Override
+    public void onConfigurationFailure(ITestResult result) {
+        LOGGER.error("Test setup or cleanup failed: {}.{}", result.getTestClass().getName(),
+                result.getMethod().getMethodName(), result.getThrowable());
+    }
 
 	@Override
 	public synchronized void onTestSkipped(ITestResult result) {
