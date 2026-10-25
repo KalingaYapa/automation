@@ -17,7 +17,7 @@ The PDF rules supersede the earlier naming/grouping recommendations in this guid
 | TestNG suite | Select the required tests and browser; retain the framework listeners. |
 | Test case catalog | Record ID, name, automation method, objective and expected result in `docs/test-case-catalog.md`. |
 
-Keep locators and WebDriver interaction in page objects. Build the page object locally for each test; do not share it or a driver across parallel tests. Use descriptive names such as `paragraphPage`, `clickTargetParagraph` and `isNewParagraphDisplayedInDocumentStructure`. Use correct spelling in new methods; do not copy `Dispalyed` from the sample.
+Keep locators and control interactions in Page Objects. Show frame entry/restoration explicitly in test methods, using the frame WebElement exposed by the Page Object. Build the page object locally for each test; do not share it or a driver across parallel tests. Use descriptive names such as `paragraphPage`, `clickTargetParagraph` and `isNewParagraphDisplayedInDocumentStructure`. Use correct spelling in new methods; do not copy `Dispalyed` from the sample.
 
 ### Package and class rules — PDF pages 1–2
 
@@ -95,9 +95,9 @@ To run only P1 cases, keep only the relevant `P1-<Module>` include lines for tha
 
 ### Current repository implementation
 
-The repository now uses `a_testbase.BaseClass`, `d_loginpage.BasePage`, and `d_loginpage.HomePage`. Shared login, project selection and file-list navigation live in `HomePage`; `ReusableMethods.loginAndSearchFileClickEdit()` opens the editor once per editor test.
+The repository now uses `a_testbase.BaseClass`, `d_loginpage.BasePage`, and `d_loginpage.HomePage`. Shared login, project selection and file-list navigation live in `HomePage`; each test method explicitly logs and calls `ReusableMethods.loginAndSearchFileClickEdit()` once before creating its page object. Do not hide the journey in a subclass `@BeforeMethod`. BaseClass still owns browser lifecycle setup/teardown.
 
-Editor cases are in `documenteditor.DocumentEditor1TestCase` with `DocumentEditorPageObjects1` in the same package. Portal journey cases are in `portal.Portal1TestCase` and reuse the shared HomePage instead of adding another login page. Every test has its module group and mapped priority group. All 38 application cases are enabled.
+Editor-level cases are in `documenteditor.DocumentEditor1TestCase` with `DocumentEditorPageObjects1` in the same package. Paragraph cases are in `para.Para1TestCase` and `ParaPageObjects1`, with `Para/P2-Para` groups. Portal journey cases are in `portal.Portal1TestCase` and reuse the shared HomePage instead of adding another login page. Every test has its module group and mapped priority group. All 38 application cases are enabled.
 
 `testng.xml` is the default suite with the `RetryMultipleFailedTestcases` block. `Master.xml` is an equivalent compatibility suite. Focused suites retain their existing command names and use standard class/group references. Sample starter cases are archived under `docs/templates` as noncompiled references.
 
@@ -135,111 +135,73 @@ Use parameterised messages: `logger.info("Paragraph count: expected={}, actual={
 
 Read a result once after waiting, store it in a local variable, then use that value in both the log and assertion. The sample calls `isNewParaDispalyedInVe()` twice; avoid that because the UI may change between calls and each call may perform another wait.
 
-`src/test/resources/log4j2.xml` now enables DEBUG for `documenteditor`, `portal` and `d_loginpage`, while keeping the root level at INFO to limit library noise:
+`src/test/resources/log4j2.xml` now enables DEBUG for `documenteditor`, `para`, `portal` and `d_loginpage`, while keeping the root level at INFO to limit library noise:
 
 ```xml
 <Logger name="documenteditor" level="debug" />
+<Logger name="para" level="debug" />
 <Logger name="portal" level="debug" />
 <Logger name="d_loginpage" level="debug" />
 ```
 
-All 38 application tests have their own class logger and explicit start/result/assertion/finish logs. Action and cleanup steps log before and after completion. Shared HomePage logs navigation without credential values. The editor page logs native input, toolbar commands and frame entry/restoration. Central report listeners log test and setup/cleanup failures at ERROR. Successful finish messages appear after assertions and required cleanup, never from a finally block.
+All 38 application tests have their own class logger and explicit start/result/assertion/finish logs. Action and cleanup steps log before and after completion. Shared HomePage logs navigation without credential values. Page Objects log native input and toolbar commands; test methods log explicit frame entry/restoration. Central report listeners log test and setup/cleanup failures at ERROR. Successful finish messages appear after assertions and required cleanup, never from a finally block.
 
 The same INFO/DEBUG messages appear in the terminal and `logs/Automation.log`. Add a matching DEBUG package logger when introducing a new feature package. The legacy `debug=yes` flag controls only BasePage's optional debug helper; it is not required for the explicit test/page logs. Read results once into local variables and reuse them in logs and assertions.
 
-## 4. Test method template using existing editor actions
+## 4. Required test format
 
-The following is a reference version of TC_17 with the standard class and groups. It assumes members of `documenteditor.DocumentEditor1TestCase extends BaseClass`, a matching `DocumentEditorPageObjects1` with the existing editor actions, and setup that opens the editor once. These classes now exist; import `a_testbase.BaseClass` and use the existing navigation setup. Do not add another TC_17 or duplicate this method (it already exists globally); adapt the pattern with a new unique method for a new scenario. Add the Log4j2 imports if missing.
+Follow the supplied team's explicit flow: start log → logged shared navigation → logged page construction → logged frame entry → action → observed result/assertion → default content for toolbar or DS → Undo cleanup → successful finish. Use `enabled = true`, exactly two module/priority groups and the existing ID in `description`. Preserve method names used as Automation IDs.
 
 ```java
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-private static final Logger LOGGER = LogManager.getLogger(DocumentEditor1TestCase.class);
-private static final String STARTING_TEST_MSG = "Starting test: {}";
-private static final String FINISHED_TEST_MSG = "Finished test: {} - PASSED";
-private static final String CLICKING_HEADING_MSG = "Clicking plain text in the target heading";
-private static final String CLICKING_PARAGRAPH_MSG = "Clicking plain text in the target paragraph";
-
-@Test(enabled = true, groups = { "DocumentEditor", "P2-DocumentEditor" },
-        description = "TC_17 | Verify selecting a paragraph shows p")
-public void verifyParagraphSelectionShowsParagraphType() {
-    final String testName = "verifyParagraphSelectionShowsParagraphType";
-    LOGGER.info(STARTING_TEST_MSG, testName);
-    LOGGER.debug("Initialising document editor page object");
-    DocumentEditorPageObjects1 page = new DocumentEditorPageObjects1(getDriver());
-
-    LOGGER.debug(CLICKING_HEADING_MSG);
-    page.clickTargetHeading();
-    LOGGER.debug("Clicked heading; waiting for Selected Element to show heading");
-    page.waitForSelectedElementType("heading");
-
-    LOGGER.debug(CLICKING_PARAGRAPH_MSG);
-    page.clickTargetParagraph();
-    LOGGER.debug("Clicked paragraph; waiting for Selected Element to show p");
-    page.waitForSelectedElementType("p");
-
-    String actualType = page.getSelectedElementType();
-    LOGGER.info("Selected Element after paragraph click: {}", actualType);
-    LOGGER.debug("Asserting Selected Element is p");
-    Assert.assertEquals(actualType, "p",
-            "Selected Element should change from heading to p after clicking the paragraph");
-    LOGGER.info(FINISHED_TEST_MSG, testName);
+@Test(enabled = true, groups = { "Para", "P2-Para" },
+        description = "TC_33 | Verify Bold affects only the selected paragraph word")
+public void verifyApplyingBoldToParagraphWord() {
+    logger.info(STARTING_TEST_MSG, "verifyApplyingBoldToParagraphWord");
+    logger.debug(CALLING_LOGIN_AND_SEARCH_FILE_EDIT_MSG);
+    ReusableMethods.loginAndSearchFileClickEdit();
+    logger.debug(LOG_LOGIN_AND_SEARCH_FILE);
+    logger.debug(INITIALIZING_PARAPAGEOBJECTS_OBJECT);
+    ParaPageObjects1 p = new ParaPageObjects1(getDriver());
+    logger.debug(SWITCHING_TO_EDITOR_FRAME_MSG);
+    getDriver().switchTo().frame(p.getEditorFrame());
+    logger.debug(LOG_SWITCHED_TO_EDITOR_FRAME);
+    // Explicit selection, default-content toolbar action, VE assertions and
+    // finally-based Undo restoration follow here; see the complete real method.
 }
 ```
 
-Log prerequisite navigation in the existing setup method or navigation page methods so it appears before the scenario steps. Do not log that login occurred unless the login action actually completed. BaseClass and the report listeners own browser teardown and failure reporting.
+This excerpt shows the required preparation, not a complete replacement for the real case. Complete implementations are in `para.Para1TestCase` and `documenteditor.DocumentEditor1TestCase`. Every scenario shows its own steps; do not introduce a helper that hides the whole test or bypass cleanup. Portal cases explicitly show login/project/file-list steps appropriate to their objective.
 
-## 5. Page Object template
-
-This reference illustrates the existing standard-named page object and shared `d_loginpage.BasePage` helpers. Add members to that class; do not create a duplicate page implementation.
+## 5. Page Object and XPath format
 
 ```java
-package documenteditor;
+public class ParaPageObjects1 extends BasePage {
+    @FindBy(xpath = "//iframe[contains(concat(' ', normalize-space(@class), ' '), ' cke_wysiwyg_frame ')]")
+    private WebElement editorFrame;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.FindBy;
-import d_loginpage.BasePage;
+    @FindBy(xpath = "//a[contains(concat(' ', normalize-space(@class), ' '), ' cke_button__bold ')]")
+    private WebElement boldButton;
 
-public class DocumentEditorPageObjects1 extends BasePage {
-    private static final Logger LOGGER = LogManager.getLogger(DocumentEditorPageObjects1.class);
-    private static final String WAITING_FOR_TYPE_MSG = "Waiting for Selected Element: {}";
-
-    @FindBy(id = "selectedElmName")
-    private WebElement selectedElementName;
-
-    public DocumentEditorPageObjects1(WebDriver driver) {
-        super(driver); // BasePage initialises PageFactory, waits and Actions.
+    public ParaPageObjects1(WebDriver driver) {
+        super(driver); // Shared BasePage initialises PageFactory and waits.
     }
 
-    public void waitForSelectedType(String expectedType) {
-        LOGGER.debug(WAITING_FOR_TYPE_MSG, expectedType);
-        mywait.until(driver -> selectedElementName.isDisplayed()
-                && expectedType.equals(selectedElementName.getText().trim()));
-        LOGGER.debug("Selected Element reached expected value: {}", expectedType);
+    public WebElement getEditorFrame() {
+        waitForElementToBeVisible(editorFrame);
+        return editorFrame;
     }
 
-    public String getSelectedType() {
-        waitForElementToBeVisible(selectedElementName);
-        return selectedElementName.getText().trim();
+    public void clickBold() {
+        elementClick(boldButton);
     }
 }
 ```
 
-Call these methods in the main-page context. The real editor page already switches there before reading this control. Page methods perform actions and waits; TestNG assertions belong in the test class. Do not add unused fields, constants, getters or unrelated methods from a larger sample page.
+Use `@FindBy(xpath = ...)` for fixed controls and collections. Prefer stable IDs, class-token checks and semantic attributes. A generated reference or positional XPath is appropriate only when its identity/order is an explicit, verified requirement; do not copy the sample's 55/56 references into this document. Relative `By.xpath` is allowed for runtime-scoped section rows and table cells.
 
-### Locators and frame handling
+Page methods expose atomic actions, `is...` checks and `get...` reads. Assertions stay in tests. Technical selection, text-normalisation and computed-style readers may be reused; they do not own the test flow or switch frames. Tests enter VE before editing/reading its contents, and return to default content before toolbar/DS checks. Always restore default content before cleanup frame entry. Send Enter to the verified editor caret while the frame is active.
 
-- Prefer stable IDs or semantic attributes scoped to the correct document/section. Use `@FindBy` for fixed locators and `By` for dynamic or re-rendered targets.
-- Do not copy generated `inno_ref='55' or '56'`, CKEditor numeric IDs or positional `(//li[@name='p'])[2]` unless that identity/order is an explicit requirement. Re-rendering and inserted paragraphs can change them.
-- Multiple `data-element='p'` nodes are normal. Locate the intended paragraph using configured text and scope. Account for nested formatting spans and invisible editor markers using the existing helpers.
-- Wait for the editor to be ready. Prefer the known CKEditor frame locator to frame index `0`; do not assume the first frame is always the editor.
-- Keep frame entry and restoration together, with `defaultContent()` in `finally` when leaving the operation. Log before and after both switches.
-- Switching to default content does not reliably preserve keyboard focus. Send Enter to the confirmed editable/caret context; do not copy the sample's switch-out-then-Enter sequence without checking what `enterKey()` does.
-- Use native input for user interactions. Use selection helpers when exact caret positioning is required; do not set a dropdown label or fabricate DOM results to make an assertion pass.
+See [the sample alignment notes](sample-format-alignment.md) for the exact differences corrected and how existing behaviours were retained.
 
 ## 6. SonarQube and code quality
 
@@ -247,7 +209,7 @@ Apply these checks before review:
 
 - Remove unused imports, fields, constants, parameters, dead code and commented-out test bodies from newly written code. Do not commit `enabled = false`; the PDF prohibits it. Do not bypass this rule with commented-out test bodies or permanently excluded cases to hide failures. Report blocked cases clearly.
 - Use consistent Java naming, private locator fields and `private static final` loggers/constants. Avoid unnecessary public WebElement getters; expose meaningful actions and checks.
-- Keep methods focused. Extract repeated navigation, frame handling, waits and actions into the appropriate existing helpers. Use constants for repeated messages and configuration for variable test data.
+- Keep methods focused. Keep scenario navigation calls and frame changes visible in each test. Reuse only atomic Page Object actions, waits and technical readers. Use constants for repeated messages and configuration for variable test data.
 - Use parameterised logs and avoid expensive WebDriver calls inside log arguments. Read actual results once.
 - Add clear assertion messages. Do not catch an exception and return success, swallow assertion failures, or print PASSED from `finally`.
 - Use explicit waits rather than `Thread.sleep`. Avoid broad exception catches and unnecessary nested conditions. Preserve the original failure if cleanup also fails, using the framework's established failure handling.
@@ -271,4 +233,4 @@ These practices reduce common findings; they cannot guarantee zero SonarQube iss
 
 Copy this when requesting or drafting another case:
 
-> Write test [ID / name] using docs/test-writing-guide.md and the existing framework. Objective: [objective]. Preconditions: [project, document, permissions, original state]. Actions: [exact interaction sequence]. Expected result: [observable values in VE/DS/right panel/CV]. Confirmed HTML/locators: [details]. Use the standard lowercase module package, `<Module><Number>TestCase` and `<Module>PageObjects<Number>` pair, a globally unique `verify...` method and exactly two groups (module and `P<n>-<Module>` from the manual priority). Reuse BaseClass, BasePage and login setup, with explicit waits and meaningful assertions, and Log4j2 INFO start/result/end plus DEBUG before/after each action, frame change and assertion. Keep locators out of tests, avoid duplicate login and WebDriver calls in log arguments, and follow the SonarQube checklist. Cleanup: [undo only this test's change]. Do not add annotation retryAnalyzer/priority or commit enabled=false. Put text repeated three or more times in constants. Update the suite class/group references and docs/test-case-catalog.md, run the relevant suite and report whether SonarQube analysis was actually run.
+> Write test [ID / name] using docs/test-writing-guide.md and the existing framework. Objective: [objective]. Preconditions: [project, document, permissions, original state]. Actions: [exact interaction sequence]. Expected result: [observable values in VE/DS/right panel/CV]. Confirmed HTML/locators: [details]. Use the standard lowercase module package, `<Module><Number>TestCase` and `<Module>PageObjects<Number>` pair, a globally unique `verify...` method and exactly two groups (module and `P<n>-<Module>` from the manual priority). Reuse BaseClass/BasePage and explicitly call shared navigation in each test, with explicit waits and meaningful assertions, and Log4j2 INFO start/result/end plus DEBUG before/after each action, frame change and assertion. Keep locators in XPath Page Objects and frame changes explicit in tests, avoid duplicate login and WebDriver calls in log arguments, and follow the SonarQube checklist. Cleanup: [undo only this test's change]. Do not add annotation retryAnalyzer/priority or commit enabled=false. Put text repeated three or more times in constants. Update the suite class/group references and docs/test-case-catalog.md, run the relevant suite and report whether SonarQube analysis was actually run.

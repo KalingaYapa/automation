@@ -7,7 +7,11 @@
     </listeners>
     <parameter name="browser" value="chrome" />
     <test name="RetryMultipleFailedTestcases">
-        <groups><run><include name="DocumentEditor" /></run></groups>
+        <groups>
+            <run>
+                <include name="DocumentEditor" />
+            </run>
+        </groups>
         <classes>
             <class name="documenteditor.DocumentEditor1TestCase">
                 <methods>

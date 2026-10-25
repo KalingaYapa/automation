@@ -9,6 +9,7 @@
 		</File>
 	</Appenders>
 	<Loggers>
+        <Logger name="para" level="debug" />
         <Logger name="documenteditor" level="debug" />
         <Logger name="portal" level="debug" />
         <Logger name="d_loginpage" level="debug" />

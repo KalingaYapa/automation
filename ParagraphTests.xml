@@ -7,9 +7,14 @@
     </listeners>
     <parameter name="browser" value="chrome" />
     <test name="RetryMultipleFailedTestcases">
-        <groups><run><include name="DocumentEditor" /></run></groups>
+        <groups>
+            <run>
+                <include name="DocumentEditor" />
+                <include name="Para" />
+            </run>
+        </groups>
         <classes>
-            <class name="documenteditor.DocumentEditor1TestCase">
+            <class name="para.Para1TestCase">
                 <methods>
                     <include name="verifyEnterIncreasesParagraphCount" />
                     <include name="verifyEnterAtParagraphBeginning" />

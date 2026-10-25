@@ -1,18 +1,14 @@
 # Automation test case catalog
 
-All 38 application cases follow the PDF naming/grouping standard and are enabled. Run them with `mvn clean test`; see [the restructuring guide](framework-restructuring.md).
-
-This catalog describes the application tests in `src/test/java/documenteditor` and `src/test/java/portal`, followed by archived starter examples. All 38 application cases include INFO start/result/finish logs and DEBUG step/assertion/cleanup logs, enabled in the terminal and logs/Automation.log. Names and IDs match the TestNG descriptions. Expected results describe the assertions, not a claim that every test has passed.
+All 38 application cases are enabled. IDs and automation method names are unchanged. Each method explicitly logs its navigation, page construction, frame transitions, actions, assertions and Undo cleanup, following [the supplied team format](sample-format-alignment.md).
 
 ## Maintenance
 
-Whenever a test is added, update this file in the same change with its ID, name, objective and expected result. Keep entries aligned when tests are renamed, changed, disabled or removed. Include the automation method so each entry can be traced to its implementation. New application test IDs should continue after TC_38; the sample template has its own overlapping IDs.
+Update this catalog in the same change whenever a test is added or changed. Record ID, name, automation method, objective and expected result. Check global ID/method uniqueness; the next unused application ID is TC_39. Expected results describe assertions, not a claim that every historical run passed.
 
 ## Document editor — DocumentEditor1TestCase
 
-Each enabled test starts with a fresh browser, logs in, selects IATA, opens Authoring File List and opens the configured document editor. All 38 application cases (33 editor cases and 5 portal cases) are enabled; no application tests are commented out. A suite must include a test for it to execute.
-
-The title-bar cases check labels and availability only. They do not perform Save, Reset File, Validate File or Check In. Formatting and paragraph-split tests undo their changes and do not save the document.
+21 editor-level cases use DocumentEditor/P2-DocumentEditor (High) or P3-DocumentEditor (Medium). Title-bar cases inspect labels/availability without clicking Save, Reset File, Validate File or Check In. Formatting cases restore their own changes with Undo.
 
 | ID | Test case name | Automation method | Objective | Expected result |
 | --- | --- | --- | --- | --- |
@@ -34,44 +30,33 @@ The title-bar cases check labels and availability only. They do not perform Save
 | TC_16 | Verify Undo restores heading formatting after applying Bold | `verifyUndoRestoresHeadingFormatting` | Apply Bold, then verify the Undo operation restores the heading word. | Bold becomes inactive and the original heading text, rendered font weight and explicit formatting snapshot are restored. |
 | TC_17 | Verify selecting a paragraph shows p | `verifyParagraphSelectionShowsParagraphType` | Start on the heading, then single-click plain text in the paragraph. | Selected Element changes from heading to p. |
 | TC_18 | Verify selecting a heading shows heading | `verifyHeadingSelectionShowsHeadingType` | Start on the paragraph, then single-click plain text in the heading. | Selected Element changes from p to heading. |
-| TC_19 | Verify Enter splits paragraph text and Undo restores it | `verifyEnterIncreasesParagraphCount` | Press Enter at the configured middle boundary, verify split text/count, then Undo. | Both text portions occur in the correct paragraph order, section paragraph count increases by one, other paragraphs remain unchanged, and Undo restores the original text sequence/count. Covers lead TC-001 and TC-004. |
+| TC_25 | Verify applying Italic to a selected heading word | `verifyApplyingItalicToHeadingWord` | Select the configured heading word, initially without italic formatting, and click Italic. | Italic becomes active and the selected word has italic markup with rendered italic font style. Undo removes the applied formatting. |
+| TC_26 | Verify applying Underline to a selected heading word | `verifyApplyingUnderlineToHeadingWord` | Select the configured heading word, initially without underline formatting, and click Underline. | Underline becomes active and the selected word has underline markup with rendered underline decoration. Undo removes the applied formatting. |
+| TC_27 | Verify Redo restores undone Bold formatting | `verifyRedoRestoresBoldFormatting` | Apply Bold to the configured heading word, undo it, then click Redo. | Undo removes explicit Bold formatting. Redo restores bold markup, rendered bold weight and the active Bold button. Final Undo removes the change. |
 
-## Portal login and navigation
+## Portal navigation — Portal1TestCase
 
-These five cases are enabled and are selected by `PortalNavigation.xml`. Each performs its own prerequisites.
+Five cases use Portal and its mapped priority. Each test explicitly performs only the prerequisite login/project/file-list steps required by its objective.
 
 | ID | Test case name | Automation method | Objective | Expected result |
 | --- | --- | --- | --- | --- |
 | TC_20 | Verify login with the sandbox test account | `verifySandboxLoginOpensPortal` | Log in with the configured sandbox test account. | The authenticated portal displays its project selector. |
-
-| ID | Test case name | Automation method | Objective | Expected result |
-| --- | --- | --- | --- | --- |
 | TC_21 | Verify selecting IATA from the project dropdown | `verifySelectingIataProject` | Select the configured IATA project from the project dropdown. | The project dropdown displays the configured portalProject value (IATA). |
 | TC_22 | Verify Authoring File List opens for IATA | `verifyAuthoringFileListOpens` | Open Authoring File List after selecting IATA. | The Authoring File List table is displayed. |
-
-| ID | Test case name | Automation method | Objective | Expected result |
-| --- | --- | --- | --- | --- |
 | TC_23 | Verify the allocated document is listed | `verifyTargetDocumentIsListed` | Find the configured document allocation in Authoring File List. | The matching allocation row displays expectedDocumentTitle. |
 | TC_24 | Verify Edit opens the allocated document editor | `verifyEditOpensDocumentEditor` | Click Edit for the configured document allocation. | The editor opens with a ready editing area and a title matching expectedDocumentTitle. |
 
-## Editor formatting and lists — DocumentEditor1TestCase
+## Paragraph — Para1TestCase
 
-TC_25–TC_29 use the existing editor setup, page object and test groups. Each starts with a fresh browser and opens the configured document. Run these five cases with `mvn clean test -DsuiteXmlFile=FormattingTests.xml`; they are also included by `DocumentEditor.xml`. These cases undo their own changes and never save or accept tracked changes.
+Twelve paragraph cases use Para/P2-Para and ParaPageObjects1. Each test calls the shared login/search/Edit helper, enters the XPath-selected editor frame for VE operations, returns to default content for toolbar/DS checks and explicitly undoes its changes. Fixed elements use XPath @FindBy fields.
+
+Run `mvn clean test -DsuiteXmlFile=ParagraphTests.xml`. See [the lead-case mapping](team-lead-paragraph-cases.md) for reused/enhanced cases and the thirteen external scenarios.
 
 | ID | Test case name | Automation method | Objective | Expected result |
 | --- | --- | --- | --- | --- |
-| TC_25 | Verify applying Italic to a selected heading word | `verifyApplyingItalicToHeadingWord` | Select the configured heading word, initially without italic formatting, and click Italic. | Italic becomes active and the selected word has italic markup with rendered italic font style. Undo removes the applied formatting. |
-| TC_26 | Verify applying Underline to a selected heading word | `verifyApplyingUnderlineToHeadingWord` | Select the configured heading word, initially without underline formatting, and click Underline. | Underline becomes active and the selected word has underline markup with rendered underline decoration. Undo removes the applied formatting. |
-| TC_27 | Verify Redo restores undone Bold formatting | `verifyRedoRestoresBoldFormatting` | Apply Bold to the configured heading word, undo it, then click Redo. | Undo removes explicit Bold formatting. Redo restores bold markup, rendered bold weight and the active Bold button. Final Undo removes the change. |
+| TC_19 | Verify Enter splits paragraph text and Undo restores it | `verifyEnterIncreasesParagraphCount` | Press Enter at the configured middle boundary, verify split text/count, then Undo. | Both text portions occur in the correct paragraph order, section paragraph count increases by one, other paragraphs remain unchanged, and Undo restores the original text sequence/count. Covers lead TC-001 and TC-004. |
 | TC_28 | Verify applying an unordered list to a paragraph | `verifyApplyingUnorderedListToParagraph` | Click plain text in the configured paragraph, initially outside a list, and click the bulleted-list button. | The unordered-list button becomes active and the unchanged paragraph text belongs to a list item inside an unordered list (ul). Undo restores a non-list paragraph. |
 | TC_29 | Verify applying an ordered list to a paragraph | `verifyApplyingOrderedListToParagraph` | Click plain text in the configured paragraph, initially outside a list, and click the numbered-list button. | The ordered-list button becomes active and the unchanged paragraph text belongs to a list item inside an ordered list (ol). Undo restores a non-list paragraph. |
-
-## Team lead paragraph additions — TC_30–TC_38
-
-See [the lead-case mapping](team-lead-paragraph-cases.md) for duplicate decisions and all thirteen supplied scenarios. `ParagraphTests.xml` selects these nine additions, enhanced TC_19 and existing list cases TC_28/TC_29. All cases use the existing editor setup, standard groups and step logs, with Undo cleanup.
-
-| ID | Test case name | Automation method | Objective | Expected result |
-| --- | --- | --- | --- | --- |
 | TC_30 | Verify Enter at the beginning of a paragraph | `verifyEnterAtParagraphBeginning` | Place the caret before the first visible character and press Enter. | An empty paragraph is inserted immediately before the unchanged target text; section paragraph count increases by one. Undo restores the original sequence/count. |
 | TC_31 | Verify Enter at the end of a paragraph | `verifyEnterAtParagraphEnd` | Place the caret after the last visible character and press Enter. | An empty paragraph is inserted immediately after the unchanged target text; section paragraph count increases by one. Undo restores the original sequence/count. |
 | TC_32 | Verify Redo restores the undone paragraph split | `verifyRedoRestoresParagraphSplit` | Split the paragraph, verify it, Undo, then Redo. | Undo restores the original text/count; Redo restores the same two text portions and increased count. Final Undo restores the original. |

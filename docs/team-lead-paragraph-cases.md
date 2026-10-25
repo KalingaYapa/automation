@@ -24,9 +24,9 @@ Nine new tests were added; one existing case was enhanced. Twelve application te
 
 ## Structure and data
 
-Tests remain in `documenteditor.DocumentEditor1TestCase` (33 cases, below the standard's approximately 50-test class size). Actions remain in `DocumentEditorPageObjects1`; existing navigation, CKEditor selection, frame, toolbar, wait and Undo helpers are reused. Six distinct paragraph formatting scenarios share their preparation/assertion/cleanup steps inside the test class.
+Tests now live in `para.Para1TestCase` with `ParaPageObjects1`, matching the supplied team sample. Each method shows its own logged navigation, page initialization, frame transitions, actions, assertions and Undo cleanup. Shared technical selection and state readers are reused without hiding test scenarios.
 
-Groups are `DocumentEditor` and `P2-DocumentEditor`. The supplied cases do not specify priorities; High was assumed consistently with the existing paragraph-editing cases. Update priority groups if the manual sheet assigns different priorities.
+Groups are `Para` and `P2-Para`. The supplied cases do not specify priorities; High was assumed consistently with the existing paragraph-editing cases. Update priority groups if the manual sheet assigns different priorities.
 
 `paragraphFormatWord=flight` is the plain text selected for paragraph formatting. The existing `editorParagraphText` and `paragraphSplitBefore` configure the paragraph and middle split. Before formatting, the test checks that the selected word is not already formatted with the style being tested.
 

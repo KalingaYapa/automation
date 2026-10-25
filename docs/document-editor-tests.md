@@ -1,6 +1,6 @@
 # Document editor tests
 
-The 33 editor cases are in `documenteditor.DocumentEditor1TestCase`. Their actions and checks live in `documenteditor.DocumentEditorPageObjects1`, in the same lowercase feature package. All editor cases are enabled; detailed IDs, objectives and expected results are in [the catalog](test-case-catalog.md).
+The 33 editor-related cases are split between `documenteditor.DocumentEditor1TestCase` (21) and `para.Para1TestCase` (12). Their actions and checks live in the matching `DocumentEditorPageObjects1` and `ParaPageObjects1` Page Objects. All editor cases are enabled; detailed IDs, objectives and expected results are in [the catalog](test-case-catalog.md).
 
 ## Scope
 
@@ -18,9 +18,9 @@ The 33 editor cases are in `documenteditor.DocumentEditor1TestCase`. Their actio
 
 Set your local sandbox username/password and appURL in `src/test/resources/config.properties`; never commit credentials. Confirm the configured IATA project, allocation path, document title, heading text/word and paragraph text match the saved sandbox document. The formatting word must initially lack explicit Bold, Italic and Underline. The paragraph must initially be outside a list. Use an editable allocation and avoid simultaneous edits to that document.
 
-`a_testbase.BaseClass` creates a fresh browser before each test and closes it after the method. Editor `@BeforeMethod` calls `ReusableMethods.loginAndSearchFileClickEdit()`, which uses `d_loginpage.HomePage` for login → IATA → Authoring File List → configured allocation Edit. Navigation happens once per test, including each independently selected case.
+`a_testbase.BaseClass` creates a fresh browser before each test and closes it after the method. Each editor/paragraph test method explicitly calls `ReusableMethods.loginAndSearchFileClickEdit()`, which uses `d_loginpage.HomePage` for login → IATA → Authoring File List → configured allocation Edit. Navigation happens once per test, including each independently selected case.
 
-The page object waits for CKEditor readiness and supports its editing iframe. Invisible editor markers and nested formatting spans are handled when matching text. The configured paragraph currently contains `system.By` without a space; keep configuration aligned with the actual saved text.
+Shared navigation waits for CKEditor readiness. Each test explicitly enters and leaves its editing iframe. Invisible editor markers and nested formatting spans are handled when matching text. The configured paragraph currently contains `system.By` without a space; keep configuration aligned with the actual saved text.
 
 Selected Element checks read `#selectedElmName` in the main page; they do not open or modify the dropdown. They click direct plain-text words (`paragraphSelectionWord=flight`, `headingSelectionWord=Flight`) to avoid selecting nested Bold or the adjacent heading number. Bold/Italic/Underline active state requires the command's `cke_button_on` state, not merely an enabled icon. Undo/Redo wait for enabled commands before native clicks.
 
@@ -37,7 +37,7 @@ mvn clean test -DsuiteXmlFile=FormattingTests.xml
 
 `DocumentEditor.xml` runs all 33 editor cases. The other suites select TC_13–TC_15, TC_17–TC_18 and TC_25–TC_29 respectively. `mvn clean test` defaults to `testng.xml` and runs all 38 application cases, including the five portal cases. `Master.xml` is an equivalent compatibility suite.
 
-Groups are `DocumentEditor` plus `P2-DocumentEditor` for High or `P3-DocumentEditor` for Medium. All suites use the standard `RetryMultipleFailedTestcases` test block and updated class references. Retry remains attached by the framework listener, with retry limit zero by default.
+Editor-level groups are `DocumentEditor` plus `P2-DocumentEditor` for High or `P3-DocumentEditor` for Medium; paragraph groups are `Para` and `P2-Para`. All suites use the standard `RetryMultipleFailedTestcases` test block and updated class references. Retry remains attached by the framework listener, with retry limit zero by default.
 
 Maven now fails when tests fail. Check executed counts, failures, skipped tests and setup errors in `target/surefire-reports/` and `reports/ExtentReport.html`. Logs are in `logs/Automation.log` and screenshots in `screenshots/`. A CDP-version warning alone is not evidence that a WebDriver test failed.
 
@@ -50,3 +50,5 @@ TC_30–TC_38 cover Enter at either boundary, paragraph Redo and six paragraph w
 formatting scenarios. Existing list cases are reused. Run
 `mvn clean test -DsuiteXmlFile=ParagraphTests.xml` for the supplied scope. See
 [the mapping and duplicate decisions](team-lead-paragraph-cases.md).
+
+The latest structure follows [the supplied sample](sample-format-alignment.md): XPath `@FindBy` fields, navigation and frame changes visible in every test, and `Para/P2-Para` groups for paragraph cases.

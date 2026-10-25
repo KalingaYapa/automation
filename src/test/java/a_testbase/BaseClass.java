@@ -47,7 +47,7 @@ public class BaseClass {
 	/** config.properties from src/test/resources, loaded once and shared by every thread. */
 	protected static final ResourceBundle CONFIG = ResourceBundle.getBundle("config");
 
-	public static Logger logger = LogManager.getLogger(BaseClass.class);
+	private static final Logger BASE_LOGGER = LogManager.getLogger(BaseClass.class);
 
 	public static final String REPORTS_DIR = System.getProperty("user.dir") + File.separator + "reports";
 	public static final String SCREENSHOTS_DIR = System.getProperty("user.dir") + File.separator + "screenshots";
@@ -111,7 +111,7 @@ public class BaseClass {
 		for (File file : files) {
 			if (file.isFile() && file.getName().toLowerCase().endsWith(suffix)) {
 				if (!file.delete()) {
-					logger.warn("Could not delete old artefact: " + file.getAbsolutePath());
+					BASE_LOGGER.warn("Could not delete old artefact: {}", file.getAbsolutePath());
 				}
 			}
 		}
@@ -143,7 +143,7 @@ public class BaseClass {
 		}
 		getDriver().get(getAppUrl());
 
-		logger.info("[" + Thread.currentThread().getName() + "] " + targetBrowser + " opened " + getAppUrl());
+		BASE_LOGGER.info("[{}] {} opened {}", Thread.currentThread().getName(), targetBrowser, getAppUrl());
 	}
 
 	/** Builds the driver for the requested browser. Selenium Manager resolves the driver binary. */
@@ -166,7 +166,7 @@ public class BaseClass {
 			return new FirefoxDriver(options);
 		}
 		if (!"chrome".equalsIgnoreCase(browser)) {
-			logger.warn("Unsupported browser '" + browser + "'. Defaulting to Chrome.");
+			BASE_LOGGER.warn("Unsupported browser '{}'. Defaulting to Chrome.", browser);
 		}
 		ChromeOptions options = new ChromeOptions();
 		String chromeBinary = System.getProperty("chromeBinary");
@@ -198,7 +198,7 @@ public class BaseClass {
 			try {
 				driver.quit();
 			} catch (Exception e) {
-				logger.error("Exception while quitting WebDriver: " + e.getMessage());
+				BASE_LOGGER.error("Exception while quitting WebDriver", e);
 			}
 		}
 		THREAD_LOCAL_DRIVER.remove();

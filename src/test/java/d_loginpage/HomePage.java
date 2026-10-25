@@ -18,22 +18,23 @@ import org.openqa.selenium.support.FindBy;
 
 /** Shared login, project selection and allocation navigation. */
 public class HomePage extends BasePage {
-    private static final Logger LOGGER = LogManager.getLogger(HomePage.class);
+    private static final Logger logger = LogManager.getLogger(HomePage.class);
 
-    private static final By ROWS = By.cssSelector("#dataTables tbody tr");
-    @FindBy(id = "email")
+    @FindBy(xpath = "//*[@id='dataTables']//tbody/tr")
+    private List<WebElement> fileRows;
+    @FindBy(xpath = "//*[@id='email']")
     private WebElement email;
-    @FindBy(css = "input[type='password']")
+    @FindBy(xpath = "//input[@type='password']")
     private WebElement password;
-    @FindBy(css = "form button[type='submit']")
+    @FindBy(xpath = "//form//button[@type='submit']")
     private WebElement submit;
-    @FindBy(css = ".navbar-right .btn-group > button[data-toggle='dropdown']")
+    @FindBy(xpath = "//*[contains(concat(' ',normalize-space(@class),' '),' navbar-right ')]//*[contains(concat(' ',normalize-space(@class),' '),' btn-group ')]/button[@data-toggle='dropdown']")
     private WebElement projectDropdown;
-    @FindBy(linkText = "Authoring File List")
+    @FindBy(xpath = "//a[normalize-space(.)='Authoring File List']")
     private WebElement authoringFileList;
-    @FindBy(id = "dataTables")
+    @FindBy(xpath = "//*[@id='dataTables']")
     private WebElement fileTable;
-    @FindBy(css = "#dataTables thead input.dt-filter-input[data-idx='5']")
+    @FindBy(xpath = "//*[@id='dataTables']//thead//input[@data-idx='5']")
     private WebElement fileNameFilter;
 
     public HomePage(WebDriver driver) {
@@ -52,24 +53,24 @@ public class HomePage extends BasePage {
         String username = requiredConfig("username");
         String secret = requiredConfig("password");
         try {
-            LOGGER.debug("Entering sandbox username");
+            logger.debug("Entering sandbox username");
             enterText(email, username);
-            LOGGER.debug("Entered sandbox username");
-            LOGGER.debug("Submitting username to open password step");
-            clickElement(submit);
-            LOGGER.debug("Username submitted; entering sandbox password");
+            logger.debug("Entered sandbox username");
+            logger.debug("Submitting username to open password step");
+            elementClick(submit);
+            logger.debug("Username submitted; entering sandbox password");
             enterText(password, secret);
-            LOGGER.debug("Entered sandbox password; submitting login");
-            clickElement(submit);
+            logger.debug("Entered sandbox password; submitting login");
+            elementClick(submit);
         } catch (WebDriverException exception) {
             // Selenium command diagnostics can contain typed input; do not expose the cause.
             throw new IllegalStateException("Portal login interaction failed ("
                     + exception.getClass().getSimpleName() + ")");
         }
         HomePage portal = new HomePage(getDriver);
-        LOGGER.debug("Login submitted; waiting for authenticated portal");
+        logger.debug("Login submitted; waiting for authenticated portal");
         portal.waitForPortal();
-        LOGGER.debug("Authenticated portal is ready");
+        logger.debug("Authenticated portal is ready");
         return portal;
     }
 
@@ -88,34 +89,34 @@ public class HomePage extends BasePage {
     }
 
     public HomePage selectProject(String project) {
-        LOGGER.debug("Opening project dropdown");
-        clickElement(projectDropdown);
-        LOGGER.debug("Project dropdown opened; finding project: {}", project);
+        logger.debug("Opening project dropdown");
+        elementClick(projectDropdown);
+        logger.debug("Project dropdown opened; finding project: {}", project);
         WebElement group = projectDropdown.findElement(By.xpath(
                 "ancestor::div[contains(concat(' ',normalize-space(@class),' '),' btn-group ')][1]"));
         WebElement option = mywait.until(driver -> {
-            for (WebElement link : group.findElements(By.cssSelector("ul.dropdown-menu a"))) {
+            for (WebElement link : group.findElements(By.xpath(".//ul[contains(concat(' ',normalize-space(@class),' '),' dropdown-menu ')]//a"))) {
                 if (link.isDisplayed() && project.equals(link.getText().trim())) {
                     return link;
                 }
             }
             return null;
         });
-        LOGGER.debug("Selecting project: {}", project);
+        logger.debug("Selecting project: {}", project);
         option.click();
-        LOGGER.debug("Selected project option; waiting for selection confirmation");
+        logger.debug("Selected project option; waiting for selection confirmation");
         mywait.until(driver -> project.equals(getSelectedProject()));
-        LOGGER.debug("Project selection confirmed: {}", project);
+        logger.debug("Project selection confirmed: {}", project);
         return this;
     }
 
     public HomePage openAuthoringFileList() {
-        LOGGER.debug("Opening Authoring File List");
-        clickElement(authoringFileList);
-        LOGGER.debug("Authoring File List clicked; waiting for table");
+        logger.debug("Opening Authoring File List");
+        elementClick(authoringFileList);
+        logger.debug("Authoring File List clicked; waiting for table");
         HomePage page = new HomePage(getDriver);
         page.waitForFileList();
-        LOGGER.debug("Authoring File List table is ready");
+        logger.debug("Authoring File List table is ready");
         return page;
     }
 
@@ -138,8 +139,8 @@ public class HomePage extends BasePage {
 
     private WebElement targetRow() {
         return mywait.ignoring(StaleElementReferenceException.class).until(driver -> {
-            for (WebElement row : findElementsNow(ROWS)) {
-                for (WebElement link : row.findElements(By.cssSelector("a[href]"))) {
+            for (WebElement row : fileRows) {
+                for (WebElement link : row.findElements(By.xpath(".//a[@href]"))) {
                     if (row.isDisplayed() && isTargetEditLink(link)) {
                         return row;
                     }
@@ -150,20 +151,20 @@ public class HomePage extends BasePage {
     }
 
     public HomePage findTargetFile() {
-        LOGGER.debug("Filtering the allocated document by configured file name");
+        logger.debug("Filtering the allocated document by configured file name");
         enterText(fileNameFilter, BaseClass.getConfig("portalFileSearch"));
         // DataTables applies this column filter on Enter, not on each keystroke.
-        LOGGER.debug("Pressing Enter to apply file-name filter");
+        logger.debug("Pressing Enter to apply file-name filter");
         fileNameFilter.sendKeys(Keys.ENTER);
-        LOGGER.debug("File-name filter applied; waiting for target allocation");
+        logger.debug("File-name filter applied; waiting for target allocation");
         targetRow();
-        LOGGER.debug("Target allocation row located");
+        logger.debug("Target allocation row located");
         return this;
     }
 
     public String getTargetFileTitle() {
         return mywait.ignoring(StaleElementReferenceException.class).until(driver -> {
-            List<WebElement> cells = targetRow().findElements(By.tagName("td"));
+            List<WebElement> cells = targetRow().findElements(By.xpath("./td"));
             return cells.size() > 5 ? cells.get(5).getText().trim() : null;
         });
     }
@@ -174,16 +175,16 @@ public class HomePage extends BasePage {
         }
         Set<String> previousWindows = new HashSet<>(getDriver.getWindowHandles());
         WebElement edit = mywait.ignoring(StaleElementReferenceException.class).until(driver -> {
-            for (WebElement link : targetRow().findElements(By.cssSelector("a[href]"))) {
+            for (WebElement link : targetRow().findElements(By.xpath(".//a[@href]"))) {
                 if (isTargetEditLink(link) && link.isDisplayed() && link.isEnabled()) {
                     return link;
                 }
             }
             return null;
         });
-        LOGGER.debug("Clicking Edit for the configured allocation");
+        logger.debug("Clicking Edit for the configured allocation");
         edit.click();
-        LOGGER.debug("Edit clicked; waiting for editor window");
+        logger.debug("Edit clicked; waiting for editor window");
         mywait.until(driver -> {
             Set<String> opened = new HashSet<>(driver.getWindowHandles());
             opened.removeAll(previousWindows);
@@ -191,17 +192,17 @@ public class HomePage extends BasePage {
                 throw new IllegalStateException("More than one window opened from the Edit action");
             }
             if (!opened.isEmpty()) {
-                LOGGER.debug("Switching to newly opened editor window");
+                logger.debug("Switching to newly opened editor window");
                 driver.switchTo().window(opened.iterator().next());
-                LOGGER.debug("Switched to editor window");
+                logger.debug("Switched to editor window");
             }
             return BaseClass.getConfig("editorFileEditPath").equals(URI.create(driver.getCurrentUrl()).getPath());
         });
         DocumentEditorPageObjects1 editor = new DocumentEditorPageObjects1(getDriver);
-        editor.waitForElementToBeVisible(By.id("titlebarFileName"));
-        LOGGER.debug("Waiting for CKEditor readiness");
+        editor.waitForElementToBeVisible(By.xpath("//*[@id='titlebarFileName']"));
+        logger.debug("Waiting for CKEditor readiness");
         editor.waitForEditorReady();
-        LOGGER.debug("Allocated document editor is ready");
+        logger.debug("Allocated document editor is ready");
         return editor;
     }
 

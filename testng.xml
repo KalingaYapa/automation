@@ -19,11 +19,17 @@
                 <include name="P2-Portal" />
                 <include name="P3-Portal" />
                 <include name="P4-Portal" />
+                <include name="Para" />
+                <include name="P1-Para" />
+                <include name="P2-Para" />
+                <include name="P3-Para" />
+                <include name="P4-Para" />
             </run>
         </groups>
         <classes>
             <class name="portal.Portal1TestCase" />
             <class name="documenteditor.DocumentEditor1TestCase" />
+            <class name="para.Para1TestCase" />
         </classes>
     </test>
 </suite>

@@ -105,3 +105,12 @@ Validation of the logging change:
 - An isolated controlled-failure check verified test/setup ERROR messages and
   the absence of a false PASSED finish. This check is outside application suites.
 - SonarQube analysis was not run.
+
+## Subsequent alignment with the supplied test format
+
+The later user request replaces the previous hidden setup/frame conventions.
+Paragraph methods now live in `para.Para1TestCase`/`ParaPageObjects1` with
+`Para/P2-Para` groups. All editor and paragraph methods call shared navigation
+inside the test body and show frame changes explicitly. Fixed controls use
+XPath `@FindBy` fields and Page actions use `elementClick`. Existing IDs and
+behaviours are preserved. See [the current alignment notes](sample-format-alignment.md).

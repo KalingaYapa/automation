@@ -7,13 +7,22 @@
     </listeners>
     <parameter name="browser" value="chrome" />
     <test name="RetryMultipleFailedTestcases">
-        <groups><run><include name="DocumentEditor" /></run></groups>
+        <groups>
+            <run>
+                <include name="DocumentEditor" />
+                <include name="Para" />
+            </run>
+        </groups>
         <classes>
             <class name="documenteditor.DocumentEditor1TestCase">
                 <methods>
                     <include name="verifyApplyingItalicToHeadingWord" />
                     <include name="verifyApplyingUnderlineToHeadingWord" />
                     <include name="verifyRedoRestoresBoldFormatting" />
+                </methods>
+            </class>
+            <class name="para.Para1TestCase">
+                <methods>
                     <include name="verifyApplyingUnorderedListToParagraph" />
                     <include name="verifyApplyingOrderedListToParagraph" />
                 </methods>

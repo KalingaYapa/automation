@@ -1,95 +1,131 @@
 package portal;
 
-import a_testbase.BaseClass;
-import d_loginpage.HomePage;
-import org.testng.Assert;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.testng.Assert;
 import org.testng.annotations.Test;
+import a_testbase.BaseClass;
+import d_loginpage.HomePage;
 
 public class Portal1TestCase extends BaseClass {
-    private static final Logger LOGGER = LogManager.getLogger(Portal1TestCase.class);
+    private static final Logger logger = LogManager.getLogger(Portal1TestCase.class);
     private static final String STARTING_TEST_MSG = "Starting test: {}";
     private static final String FINISHED_TEST_MSG = "Finished test: {} - PASSED";
+    private static final String INITIALIZING_HOME_PAGE_MSG = "Initialising shared HomePage";
+    private static final String CALLING_LOGIN_MSG = "Calling sandbox login";
+    private static final String LOG_LOGIN_COMPLETE = "Sandbox login completed";
+    private static final String SELECTING_PROJECT_MSG = "Selecting the configured project";
+    private static final String OPENING_FILE_LIST_MSG = "Opening Authoring File List";
+    private static final String FINDING_ALLOCATION_MSG = "Finding the configured document allocation";
 
-    private static final String MODULE_GROUP = "Portal";
-    private static final String HIGH_PRIORITY_GROUP = "P2-Portal";
-    private static final String PROJECT_CONFIG = "portalProject";
-
-    @Test(groups = { MODULE_GROUP, "P1-Portal" }, description = "TC_20 | Verify login with the sandbox test account")
+    @Test(enabled = true, groups = { "Portal", "P1-Portal" }, description = "TC_20 | Verify login with the sandbox test account")
     public void verifySandboxLoginOpensPortal() {
-        LOGGER.info(STARTING_TEST_MSG, "verifySandboxLoginOpensPortal");
-        LOGGER.debug("Reading observed result: Authenticated portal displayed");
-        boolean actualResult = homePage().login().isPortalDisplayed();
-        LOGGER.info("Authenticated portal displayed: {}", actualResult);
-        LOGGER.debug("Asserting expected result: Authenticated portal displayed");
-        Assert.assertTrue(actualResult,
-                "Successful login should display the authenticated portal project selector");
-        LOGGER.info(FINISHED_TEST_MSG, "verifySandboxLoginOpensPortal");
+        logger.info(STARTING_TEST_MSG, "verifySandboxLoginOpensPortal");
+        logger.debug(INITIALIZING_HOME_PAGE_MSG);
+        HomePage p = new HomePage(getDriver());
+        logger.debug(CALLING_LOGIN_MSG);
+        p.login();
+        logger.debug(LOG_LOGIN_COMPLETE);
+        logger.debug("Reading the observed portal result");
+        boolean actual = p.isPortalDisplayed();
+        logger.info("Observed portal result: {}", actual);
+        logger.debug("Asserting the expected portal result");
+        Assert.assertTrue(actual, "Expected portal screen should be displayed");
+        logger.info(FINISHED_TEST_MSG, "verifySandboxLoginOpensPortal");
     }
 
-    private HomePage homePage() {
-        LOGGER.debug("Initialising shared portal page object");
-        return new HomePage(getDriver());
-    }
-
-    private HomePage portal() {
-        return homePage().login();
-    }
-
-    @Test(groups = { MODULE_GROUP, HIGH_PRIORITY_GROUP }, description = "TC_21 | Verify selecting IATA from the project dropdown")
+    @Test(enabled = true, groups = { "Portal", "P2-Portal" }, description = "TC_21 | Verify selecting IATA from the project dropdown")
     public void verifySelectingIataProject() {
-        LOGGER.info(STARTING_TEST_MSG, "verifySelectingIataProject");
-        HomePage page = portal().selectProject(getConfig(PROJECT_CONFIG));
-        LOGGER.debug("Reading observed result: Selected project");
-        String actualResult = page.getSelectedProject();
-        LOGGER.info("Selected project: {}", actualResult);
-        LOGGER.debug("Asserting expected result: Selected project");
-        Assert.assertEquals(actualResult, getConfig(PROJECT_CONFIG),
-                "The project dropdown should identify the selected IATA project");
-        LOGGER.info(FINISHED_TEST_MSG, "verifySelectingIataProject");
+        logger.info(STARTING_TEST_MSG, "verifySelectingIataProject");
+        logger.debug(INITIALIZING_HOME_PAGE_MSG);
+        HomePage p = new HomePage(getDriver());
+        logger.debug(CALLING_LOGIN_MSG);
+        p.login();
+        logger.debug(LOG_LOGIN_COMPLETE);
+        logger.debug(SELECTING_PROJECT_MSG);
+        p.selectProject(getConfig("portalProject"));
+        logger.debug("Project selection completed");
+        logger.debug("Reading the observed portal result");
+        String actual = p.getSelectedProject();
+        logger.info("Observed portal result: {}", actual);
+        logger.debug("Asserting the expected portal result");
+        Assert.assertEquals(actual, getConfig("portalProject"));
+        logger.info(FINISHED_TEST_MSG, "verifySelectingIataProject");
     }
 
-    @Test(groups = { MODULE_GROUP, HIGH_PRIORITY_GROUP }, description = "TC_22 | Verify Authoring File List opens for IATA")
+    @Test(enabled = true, groups = { "Portal", "P2-Portal" }, description = "TC_22 | Verify Authoring File List opens for IATA")
     public void verifyAuthoringFileListOpens() {
-        LOGGER.info(STARTING_TEST_MSG, "verifyAuthoringFileListOpens");
-        LOGGER.debug("Reading observed result: Authoring File List displayed");
-        boolean actualResult = portal().selectProject(getConfig(PROJECT_CONFIG))
-                .openAuthoringFileList().isFileListDisplayed();
-        LOGGER.info("Authoring File List displayed: {}", actualResult);
-        LOGGER.debug("Asserting expected result: Authoring File List displayed");
-        Assert.assertTrue(actualResult,
-                "The IATA Authoring File List should display its file table");
-        LOGGER.info(FINISHED_TEST_MSG, "verifyAuthoringFileListOpens");
+        logger.info(STARTING_TEST_MSG, "verifyAuthoringFileListOpens");
+        logger.debug(INITIALIZING_HOME_PAGE_MSG);
+        HomePage p = new HomePage(getDriver());
+        logger.debug(CALLING_LOGIN_MSG);
+        p.login();
+        logger.debug(LOG_LOGIN_COMPLETE);
+        logger.debug(SELECTING_PROJECT_MSG);
+        p.selectProject(getConfig("portalProject"));
+        logger.debug("Project selection completed");
+        logger.debug(OPENING_FILE_LIST_MSG);
+        p.openAuthoringFileList();
+        logger.debug("Authoring File List opened");
+        logger.debug("Reading the observed portal result");
+        boolean actual = p.isFileListDisplayed();
+        logger.info("Observed portal result: {}", actual);
+        logger.debug("Asserting the expected portal result");
+        Assert.assertTrue(actual, "Expected portal screen should be displayed");
+        logger.info(FINISHED_TEST_MSG, "verifyAuthoringFileListOpens");
     }
 
-    private HomePage fileList() {
-        return homePage().login().selectProject(getConfig(PROJECT_CONFIG))
-                .openAuthoringFileList().findTargetFile();
-    }
-
-    @Test(groups = { MODULE_GROUP, HIGH_PRIORITY_GROUP }, description = "TC_23 | Verify the allocated document is listed")
+    @Test(enabled = true, groups = { "Portal", "P2-Portal" }, description = "TC_23 | Verify the allocated document is listed")
     public void verifyTargetDocumentIsListed() {
-        LOGGER.info(STARTING_TEST_MSG, "verifyTargetDocumentIsListed");
-        LOGGER.debug("Reading observed result: Allocated file title");
-        String actualResult = fileList().getTargetFileTitle();
-        LOGGER.info("Allocated file title: {}", actualResult);
-        LOGGER.debug("Asserting expected result: Allocated file title");
-        Assert.assertEquals(actualResult, getConfig("expectedDocumentTitle"),
-                "The allocated file row should display the expected document title");
-        LOGGER.info(FINISHED_TEST_MSG, "verifyTargetDocumentIsListed");
+        logger.info(STARTING_TEST_MSG, "verifyTargetDocumentIsListed");
+        logger.debug(INITIALIZING_HOME_PAGE_MSG);
+        HomePage p = new HomePage(getDriver());
+        logger.debug(CALLING_LOGIN_MSG);
+        p.login();
+        logger.debug(LOG_LOGIN_COMPLETE);
+        logger.debug(SELECTING_PROJECT_MSG);
+        p.selectProject(getConfig("portalProject"));
+        logger.debug("Project selection completed");
+        logger.debug(OPENING_FILE_LIST_MSG);
+        p.openAuthoringFileList();
+        logger.debug("Authoring File List opened");
+        logger.debug(FINDING_ALLOCATION_MSG);
+        p.findTargetFile();
+        logger.debug("Configured allocation found");
+        logger.debug("Reading the observed portal result");
+        String actual = p.getTargetFileTitle();
+        logger.info("Observed portal result: {}", actual);
+        logger.debug("Asserting the expected portal result");
+        Assert.assertEquals(actual, getConfig("expectedDocumentTitle"));
+        logger.info(FINISHED_TEST_MSG, "verifyTargetDocumentIsListed");
     }
 
-    @Test(groups = { MODULE_GROUP, "P1-Portal" }, description = "TC_24 | Verify Edit opens the allocated document editor")
+    @Test(enabled = true, groups = { "Portal", "P1-Portal" }, description = "TC_24 | Verify Edit opens the allocated document editor")
     public void verifyEditOpensDocumentEditor() {
-        LOGGER.info(STARTING_TEST_MSG, "verifyEditOpensDocumentEditor");
-        LOGGER.debug("Reading observed result: Opened editor title");
-        String actualResult = fileList().openTargetFile().getDocumentTitle();
-        LOGGER.info("Opened editor title: {}", actualResult);
-        LOGGER.debug("Asserting expected result: Opened editor title");
-        Assert.assertEquals(actualResult, getConfig("expectedDocumentTitle"),
-                "The Edit action should open the editor for the allocated document");
-        LOGGER.info(FINISHED_TEST_MSG, "verifyEditOpensDocumentEditor");
+        logger.info(STARTING_TEST_MSG, "verifyEditOpensDocumentEditor");
+        logger.debug(INITIALIZING_HOME_PAGE_MSG);
+        HomePage p = new HomePage(getDriver());
+        logger.debug(CALLING_LOGIN_MSG);
+        p.login();
+        logger.debug(LOG_LOGIN_COMPLETE);
+        logger.debug(SELECTING_PROJECT_MSG);
+        p.selectProject(getConfig("portalProject"));
+        logger.debug("Project selection completed");
+        logger.debug(OPENING_FILE_LIST_MSG);
+        p.openAuthoringFileList();
+        logger.debug("Authoring File List opened");
+        logger.debug(FINDING_ALLOCATION_MSG);
+        p.findTargetFile();
+        logger.debug("Configured allocation found");
+        logger.debug("Clicking allocation Edit and waiting for the editor");
+        documenteditor.DocumentEditorPageObjects1 editor = p.openTargetFile();
+        logger.debug("Allocation editor opened");
+        logger.debug("Reading the observed portal result");
+        String actual = editor.getDocumentTitle();
+        logger.info("Observed portal result: {}", actual);
+        logger.debug("Asserting the expected portal result");
+        Assert.assertEquals(actual, getConfig("expectedDocumentTitle"));
+        logger.info(FINISHED_TEST_MSG, "verifyEditOpensDocumentEditor");
     }
 
 }

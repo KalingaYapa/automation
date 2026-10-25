@@ -86,12 +86,12 @@ public class BasePage {
 	// ================================================================ clicks
 
 	/** Native click once the element is clickable. */
-	public void clickElement(WebElement element) {
+	public void elementClick(WebElement element) {
 		mywait.until(ExpectedConditions.elementToBeClickable(element));
 		element.click();
 	}
 
-	public void clickElement(By locator) {
+	public void elementClick(By locator) {
 		mywait.until(ExpectedConditions.elementToBeClickable(locator)).click();
 	}
 
