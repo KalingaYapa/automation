@@ -16,17 +16,18 @@ src/test/java/
 src/test/resources/config.properties          local configuration
 ```
 
-All 29 application tests are enabled: TC_01–TC_19 and TC_25–TC_29 cover the editor; TC_20–TC_24 cover portal navigation. The five sample-screen examples are preserved under `docs/templates` as noncompiled references.
+All 38 application tests are enabled: TC_01–TC_19 and TC_25–TC_38 cover the editor; TC_20–TC_24 cover portal navigation. The five sample-screen examples are preserved under `docs/templates` as noncompiled references.
 
 ## Run
 
 Install JDK 17 or later, Maven and Chrome. Set the sandbox login URL and test account in your local `src/test/resources/config.properties`. Never commit credentials.
 
 ```bash
-mvn clean test                                      # all 29 application tests
-mvn clean test -DsuiteXmlFile=DocumentEditor.xml      # 24 editor tests
+mvn clean test                                      # all 38 application tests
+mvn clean test -DsuiteXmlFile=DocumentEditor.xml      # 33 editor tests
 mvn clean test -DsuiteXmlFile=PortalNavigation.xml    # 5 portal tests
 mvn clean test -DsuiteXmlFile=FormattingTests.xml     # TC_25–TC_29
+mvn clean test -DsuiteXmlFile=ParagraphTests.xml      # supplied paragraph scope (12 methods)
 mvn clean test -Dgroups=P2-DocumentEditor             # High-priority editor tests
 ```
 
@@ -48,3 +49,5 @@ for `documenteditor`, `portal` and `d_loginpage`. Console and
 `logs/Automation.log` receive the same messages; no extra Maven flag is needed.
 Failure listeners emit ERROR logs for test and setup/cleanup exceptions. Credentials
 are never logged. See [the logging guidance](docs/test-writing-guide.md#3-logging-requirements).
+
+See [the team lead paragraph-case mapping](docs/team-lead-paragraph-cases.md) for reused/enhanced cases and new paragraph-specific coverage.

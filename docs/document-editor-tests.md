@@ -1,6 +1,6 @@
 # Document editor tests
 
-The 24 editor cases are in `documenteditor.DocumentEditor1TestCase`. Their actions and checks live in `documenteditor.DocumentEditorPageObjects1`, in the same lowercase feature package. All editor cases are enabled; detailed IDs, objectives and expected results are in [the catalog](test-case-catalog.md).
+The 33 editor cases are in `documenteditor.DocumentEditor1TestCase`. Their actions and checks live in `documenteditor.DocumentEditorPageObjects1`, in the same lowercase feature package. All editor cases are enabled; detailed IDs, objectives and expected results are in [the catalog](test-case-catalog.md).
 
 ## Scope
 
@@ -35,10 +35,18 @@ mvn clean test -DsuiteXmlFile=ElementSelectionTests.xml
 mvn clean test -DsuiteXmlFile=FormattingTests.xml
 ```
 
-`DocumentEditor.xml` runs all 24 editor cases. The other suites select TC_13–TC_15, TC_17–TC_18 and TC_25–TC_29 respectively. `mvn clean test` defaults to `testng.xml` and runs all 29 application cases, including the five portal cases. `Master.xml` is an equivalent compatibility suite.
+`DocumentEditor.xml` runs all 33 editor cases. The other suites select TC_13–TC_15, TC_17–TC_18 and TC_25–TC_29 respectively. `mvn clean test` defaults to `testng.xml` and runs all 38 application cases, including the five portal cases. `Master.xml` is an equivalent compatibility suite.
 
 Groups are `DocumentEditor` plus `P2-DocumentEditor` for High or `P3-DocumentEditor` for Medium. All suites use the standard `RetryMultipleFailedTestcases` test block and updated class references. Retry remains attached by the framework listener, with retry limit zero by default.
 
 Maven now fails when tests fail. Check executed counts, failures, skipped tests and setup errors in `target/surefire-reports/` and `reports/ExtentReport.html`. Logs are in `logs/Automation.log` and screenshots in `screenshots/`. A CDP-version warning alone is not evidence that a WebDriver test failed.
 
 See [terminal instructions](run-formatting-tests-terminal.md), [the restructuring guide](framework-restructuring.md) and [the writing standard](test-writing-guide.md).
+
+## Team lead paragraph cases
+
+TC_19 now verifies split text and restoration after Undo as well as count. New
+TC_30–TC_38 cover Enter at either boundary, paragraph Redo and six paragraph word
+formatting scenarios. Existing list cases are reused. Run
+`mvn clean test -DsuiteXmlFile=ParagraphTests.xml` for the supplied scope. See
+[the mapping and duplicate decisions](team-lead-paragraph-cases.md).

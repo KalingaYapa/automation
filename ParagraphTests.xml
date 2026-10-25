@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<suite name="Paragraph Editing Checks" parallel="none" thread-count="1">
+    <listeners>
+        <listener class-name="b_utilities.ExtentReportManager" />
+        <listener class-name="b_utilities.AnnotationTransfer" />
+    </listeners>
+    <parameter name="browser" value="chrome" />
+    <test name="RetryMultipleFailedTestcases">
+        <groups><run><include name="DocumentEditor" /></run></groups>
+        <classes>
+            <class name="documenteditor.DocumentEditor1TestCase">
+                <methods>
+                    <include name="verifyEnterIncreasesParagraphCount" />
+                    <include name="verifyEnterAtParagraphBeginning" />
+                    <include name="verifyEnterAtParagraphEnd" />
+                    <include name="verifyRedoRestoresParagraphSplit" />
+                    <include name="verifyApplyingOrderedListToParagraph" />
+                    <include name="verifyApplyingUnorderedListToParagraph" />
+                    <include name="verifyApplyingBoldToParagraphWord" />
+                    <include name="verifyApplyingItalicToParagraphWord" />
+                    <include name="verifyApplyingUnderlineToParagraphWord" />
+                    <include name="verifyApplyingSubscriptToParagraphWord" />
+                    <include name="verifyApplyingSuperscriptToParagraphWord" />
+                    <include name="verifyApplyingStrikethroughToParagraphWord" />
+                </methods>
+            </class>
+        </classes>
+    </test>
+</suite>

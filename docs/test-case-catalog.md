@@ -1,16 +1,16 @@
 # Automation test case catalog
 
-All 29 application cases follow the PDF naming/grouping standard and are enabled. Run them with `mvn clean test`; see [the restructuring guide](framework-restructuring.md).
+All 38 application cases follow the PDF naming/grouping standard and are enabled. Run them with `mvn clean test`; see [the restructuring guide](framework-restructuring.md).
 
-This catalog describes the application tests in `src/test/java/documenteditor` and `src/test/java/portal`, followed by archived starter examples. All 29 application cases include INFO start/result/finish logs and DEBUG step/assertion/cleanup logs, enabled in the terminal and logs/Automation.log. Names and IDs match the TestNG descriptions. Expected results describe the assertions, not a claim that every test has passed.
+This catalog describes the application tests in `src/test/java/documenteditor` and `src/test/java/portal`, followed by archived starter examples. All 38 application cases include INFO start/result/finish logs and DEBUG step/assertion/cleanup logs, enabled in the terminal and logs/Automation.log. Names and IDs match the TestNG descriptions. Expected results describe the assertions, not a claim that every test has passed.
 
 ## Maintenance
 
-Whenever a test is added, update this file in the same change with its ID, name, objective and expected result. Keep entries aligned when tests are renamed, changed, disabled or removed. Include the automation method so each entry can be traced to its implementation. New application test IDs should continue after TC_29; the sample template has its own overlapping IDs.
+Whenever a test is added, update this file in the same change with its ID, name, objective and expected result. Keep entries aligned when tests are renamed, changed, disabled or removed. Include the automation method so each entry can be traced to its implementation. New application test IDs should continue after TC_38; the sample template has its own overlapping IDs.
 
 ## Document editor — DocumentEditor1TestCase
 
-Each enabled test starts with a fresh browser, logs in, selects IATA, opens Authoring File List and opens the configured document editor. All 29 application cases (24 editor cases and 5 portal cases) are enabled; no application tests are commented out. A suite must include a test for it to execute.
+Each enabled test starts with a fresh browser, logs in, selects IATA, opens Authoring File List and opens the configured document editor. All 38 application cases (33 editor cases and 5 portal cases) are enabled; no application tests are commented out. A suite must include a test for it to execute.
 
 The title-bar cases check labels and availability only. They do not perform Save, Reset File, Validate File or Check In. Formatting and paragraph-split tests undo their changes and do not save the document.
 
@@ -34,7 +34,7 @@ The title-bar cases check labels and availability only. They do not perform Save
 | TC_16 | Verify Undo restores heading formatting after applying Bold | `verifyUndoRestoresHeadingFormatting` | Apply Bold, then verify the Undo operation restores the heading word. | Bold becomes inactive and the original heading text, rendered font weight and explicit formatting snapshot are restored. |
 | TC_17 | Verify selecting a paragraph shows p | `verifyParagraphSelectionShowsParagraphType` | Start on the heading, then single-click plain text in the paragraph. | Selected Element changes from heading to p. |
 | TC_18 | Verify selecting a heading shows heading | `verifyHeadingSelectionShowsHeadingType` | Start on the paragraph, then single-click plain text in the heading. | Selected Element changes from p to heading. |
-| TC_19 | Verify Enter increases the section paragraph count by one | `verifyEnterIncreasesParagraphCount` | Place the caret at the configured paragraph split point and press Enter. | The target section has one more paragraph row in Document Structure than its initial count. Cleanup uses Undo to restore the initial count. |
+| TC_19 | Verify Enter splits paragraph text and Undo restores it | `verifyEnterIncreasesParagraphCount` | Press Enter at the configured middle boundary, verify split text/count, then Undo. | Both text portions occur in the correct paragraph order, section paragraph count increases by one, other paragraphs remain unchanged, and Undo restores the original text sequence/count. Covers lead TC-001 and TC-004. |
 
 ## Portal login and navigation
 
@@ -65,6 +65,22 @@ TC_25–TC_29 use the existing editor setup, page object and test groups. Each s
 | TC_27 | Verify Redo restores undone Bold formatting | `verifyRedoRestoresBoldFormatting` | Apply Bold to the configured heading word, undo it, then click Redo. | Undo removes explicit Bold formatting. Redo restores bold markup, rendered bold weight and the active Bold button. Final Undo removes the change. |
 | TC_28 | Verify applying an unordered list to a paragraph | `verifyApplyingUnorderedListToParagraph` | Click plain text in the configured paragraph, initially outside a list, and click the bulleted-list button. | The unordered-list button becomes active and the unchanged paragraph text belongs to a list item inside an unordered list (ul). Undo restores a non-list paragraph. |
 | TC_29 | Verify applying an ordered list to a paragraph | `verifyApplyingOrderedListToParagraph` | Click plain text in the configured paragraph, initially outside a list, and click the numbered-list button. | The ordered-list button becomes active and the unchanged paragraph text belongs to a list item inside an ordered list (ol). Undo restores a non-list paragraph. |
+
+## Team lead paragraph additions — TC_30–TC_38
+
+See [the lead-case mapping](team-lead-paragraph-cases.md) for duplicate decisions and all thirteen supplied scenarios. `ParagraphTests.xml` selects these nine additions, enhanced TC_19 and existing list cases TC_28/TC_29. All cases use the existing editor setup, standard groups and step logs, with Undo cleanup.
+
+| ID | Test case name | Automation method | Objective | Expected result |
+| --- | --- | --- | --- | --- |
+| TC_30 | Verify Enter at the beginning of a paragraph | `verifyEnterAtParagraphBeginning` | Place the caret before the first visible character and press Enter. | An empty paragraph is inserted immediately before the unchanged target text; section paragraph count increases by one. Undo restores the original sequence/count. |
+| TC_31 | Verify Enter at the end of a paragraph | `verifyEnterAtParagraphEnd` | Place the caret after the last visible character and press Enter. | An empty paragraph is inserted immediately after the unchanged target text; section paragraph count increases by one. Undo restores the original sequence/count. |
+| TC_32 | Verify Redo restores the undone paragraph split | `verifyRedoRestoresParagraphSplit` | Split the paragraph, verify it, Undo, then Redo. | Undo restores the original text/count; Redo restores the same two text portions and increased count. Final Undo restores the original. |
+| TC_33 | Verify Bold affects only the selected paragraph word | `verifyApplyingBoldToParagraphWord` | Select the configured plain paragraph word and apply Bold. | The selected word gains bold font weight; the matching toolbar button is active. Paragraph text and every unselected character style remain unchanged. Undo restores the original character snapshot. |
+| TC_34 | Verify Italic affects only the selected paragraph word | `verifyApplyingItalicToParagraphWord` | Select the configured plain paragraph word and apply Italic. | The selected word gains italic font style; the matching toolbar button is active. Paragraph text and every unselected character style remain unchanged. Undo restores the original character snapshot. |
+| TC_35 | Verify Underline affects only the selected paragraph word | `verifyApplyingUnderlineToParagraphWord` | Select the configured plain paragraph word and apply Underline. | The selected word gains underline decoration; the matching toolbar button is active. Paragraph text and every unselected character style remain unchanged. Undo restores the original character snapshot. |
+| TC_36 | Verify Subscript affects only the selected paragraph word | `verifyApplyingSubscriptToParagraphWord` | Select the configured plain paragraph word and apply Subscript. | The selected word gains a smaller font and subscript vertical alignment; the matching toolbar button is active. Paragraph text and every unselected character style remain unchanged. Undo restores the original character snapshot. |
+| TC_37 | Verify Superscript affects only the selected paragraph word | `verifyApplyingSuperscriptToParagraphWord` | Select the configured plain paragraph word and apply Superscript. | The selected word gains a smaller font and superscript vertical alignment; the matching toolbar button is active. Paragraph text and every unselected character style remain unchanged. Undo restores the original character snapshot. |
+| TC_38 | Verify Strikethrough affects only the selected paragraph word | `verifyApplyingStrikethroughToParagraphWord` | Select the configured plain paragraph word and apply Strikethrough. | The selected word gains line-through decoration; the matching toolbar button is active. Paragraph text and every unselected character style remain unchanged. Undo restores the original character snapshot. |
 
 ## Archived sample template — Aa_SampleTC
 

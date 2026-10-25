@@ -6,6 +6,7 @@ import org.apache.logging.log4j.Logger;
 import org.testng.annotations.Test;
 import org.testng.annotations.BeforeMethod;
 import a_testbase.BaseClass;
+import documenteditor.DocumentEditorPageObjects1.ParagraphFormat;
 
 /** Each test independently logs in and opens the allocated document. */
 public class DocumentEditor1TestCase extends BaseClass {
@@ -25,6 +26,8 @@ public class DocumentEditor1TestCase extends BaseClass {
     private static final String SELECTED_ELEMENT_UPDATED_MSG = "Completed: waiting for the Selected Element value";
     private static final String CLICKING_PARAGRAPH_MSG = "Clicking plain text in the target paragraph";
     private static final String CLICKED_PARAGRAPH_MSG = "Completed: clicking plain text in the target paragraph";
+    private static final String INITIAL_PARAGRAPH_COUNT_MSG = "Initial target section paragraph count: {}";
+    private static final String PARAGRAPH_TEXT_AFTER_ENTER_MSG = "Paragraph text sequence after Enter: {}";
     private static final String MODULE_GROUP = "DocumentEditor";
     private static final String HIGH_PRIORITY_GROUP = "P2-DocumentEditor";
     private static final String HEADING_TYPE = "heading";
@@ -343,12 +346,13 @@ public class DocumentEditor1TestCase extends BaseClass {
                 "Selected Element should change from p to heading after clicking the heading");
         LOGGER.info(FINISHED_TEST_MSG, "verifyHeadingSelectionShowsHeadingType");
     }
-    @Test(groups = { MODULE_GROUP, HIGH_PRIORITY_GROUP }, description = "TC_19 | Verify Enter increases the section paragraph count by one")
+    /** Lead case(s): TC-001 and TC-004; see docs/team-lead-paragraph-cases.md. */
+    @Test(groups = { MODULE_GROUP, HIGH_PRIORITY_GROUP }, description = "TC_19 | Verify Enter splits paragraph text and Undo restores it")
     public void verifyEnterIncreasesParagraphCount() {
         LOGGER.info(STARTING_TEST_MSG, "verifyEnterIncreasesParagraphCount");
         DocumentEditorPageObjects1 page = editor();
         int originalCount = page.getParagraphCountInTargetSection();
-        LOGGER.info("Initial target section paragraph count: {}", originalCount);
+        LOGGER.info(INITIAL_PARAGRAPH_COUNT_MSG, originalCount);
         if (originalCount < 1) {
             throw new IllegalStateException("Precondition: expand the target section containing the original paragraph");
         }
@@ -367,6 +371,13 @@ public class DocumentEditor1TestCase extends BaseClass {
             LOGGER.debug("Asserting expected result: Target section paragraph count after Enter");
             Assert.assertEquals(actualResult, originalCount + 1,
                     "Enter should add one paragraph row in the target section's Document Structure");
+            LOGGER.debug("Waiting for exact text on both sides of the split");
+            page.waitForParagraphEnterResult();
+            java.util.List<String> splitTexts = page.getEditedSectionParagraphTexts();
+            LOGGER.info(PARAGRAPH_TEXT_AFTER_ENTER_MSG, splitTexts);
+            LOGGER.debug("Asserting that text split at the configured boundary without other changes");
+            Assert.assertEquals(splitTexts, page.getExpectedParagraphTextsAfterEnter(),
+                    "Enter should split only the target paragraph at the configured cursor position");
         } finally {
             if (splitSent && page.getParagraphCountInTargetSection() != originalCount) {
                 LOGGER.debug("Undoing this test's paragraph split");
@@ -374,6 +385,11 @@ public class DocumentEditor1TestCase extends BaseClass {
                 LOGGER.debug("Completed: undoing this test's paragraph split");
             }
         }
+        java.util.List<String> restored = page.getEditedSectionParagraphTexts();
+        LOGGER.info("Paragraph text sequence after Undo: {}", restored);
+        LOGGER.debug("Asserting that Undo restored the original paragraph text sequence");
+        Assert.assertEquals(restored, page.getOriginalParagraphTexts(),
+                "Undo should join the split text back into the original paragraph");
         LOGGER.info(FINISHED_TEST_MSG, "verifyEnterIncreasesParagraphCount");
     }
 
@@ -484,6 +500,7 @@ public class DocumentEditor1TestCase extends BaseClass {
         LOGGER.info(FINISHED_TEST_MSG, "verifyRedoRestoresBoldFormatting");
     }
 
+    /** Lead case(s): TC-007; see docs/team-lead-paragraph-cases.md. */
     @Test(groups = { MODULE_GROUP, HIGH_PRIORITY_GROUP }, description = "TC_28 | Verify applying an unordered list to a paragraph")
     public void verifyApplyingUnorderedListToParagraph() {
         LOGGER.info(STARTING_TEST_MSG, "verifyApplyingUnorderedListToParagraph");
@@ -516,6 +533,7 @@ public class DocumentEditor1TestCase extends BaseClass {
         LOGGER.info(FINISHED_TEST_MSG, "verifyApplyingUnorderedListToParagraph");
     }
 
+    /** Lead case(s): TC-006; see docs/team-lead-paragraph-cases.md. */
     @Test(groups = { MODULE_GROUP, HIGH_PRIORITY_GROUP }, description = "TC_29 | Verify applying an ordered list to a paragraph")
     public void verifyApplyingOrderedListToParagraph() {
         LOGGER.info(STARTING_TEST_MSG, "verifyApplyingOrderedListToParagraph");
@@ -546,6 +564,180 @@ public class DocumentEditor1TestCase extends BaseClass {
             }
         }
         LOGGER.info(FINISHED_TEST_MSG, "verifyApplyingOrderedListToParagraph");
+    }
+
+    /** Lead case(s): TC-002; see docs/team-lead-paragraph-cases.md. */
+    @Test(groups = { MODULE_GROUP, HIGH_PRIORITY_GROUP }, description = "TC_30 | Verify Enter at the beginning of a paragraph")
+    public void verifyEnterAtParagraphBeginning() {
+        LOGGER.info(STARTING_TEST_MSG, "verifyEnterAtParagraphBeginning");
+        DocumentEditorPageObjects1 page = editor();
+        int originalCount = page.getParagraphCountInTargetSection();
+        LOGGER.info(INITIAL_PARAGRAPH_COUNT_MSG, originalCount);
+        boolean enterSent = false;
+        try {
+            LOGGER.debug("Placing the caret at the paragraph beginning and pressing Enter");
+            page.pressEnterAtParagraphBeginning();
+            enterSent = true;
+            LOGGER.debug("Pressed Enter; waiting for the new empty paragraph");
+            page.waitForParagraphEnterResult();
+            page.waitForParagraphCountInTargetSection(originalCount + 1);
+            java.util.List<String> actual = page.getEditedSectionParagraphTexts();
+            LOGGER.info(PARAGRAPH_TEXT_AFTER_ENTER_MSG, actual);
+            LOGGER.debug("Asserting empty paragraph placement and unchanged original text");
+            Assert.assertEquals(actual, page.getExpectedParagraphTextsAfterEnter(),
+                    "Enter at the beginning should insert an empty paragraph and preserve original text");
+        } finally {
+            if (enterSent) {
+                LOGGER.debug("Undoing this test's paragraph Enter action");
+                page.undoParagraphSplit(originalCount);
+                LOGGER.debug("Original paragraph count and text restored after Undo");
+            }
+        }
+        LOGGER.info(FINISHED_TEST_MSG, "verifyEnterAtParagraphBeginning");
+    }
+
+    /** Lead case(s): TC-003; see docs/team-lead-paragraph-cases.md. */
+    @Test(groups = { MODULE_GROUP, HIGH_PRIORITY_GROUP }, description = "TC_31 | Verify Enter at the end of a paragraph")
+    public void verifyEnterAtParagraphEnd() {
+        LOGGER.info(STARTING_TEST_MSG, "verifyEnterAtParagraphEnd");
+        DocumentEditorPageObjects1 page = editor();
+        int originalCount = page.getParagraphCountInTargetSection();
+        LOGGER.info(INITIAL_PARAGRAPH_COUNT_MSG, originalCount);
+        boolean enterSent = false;
+        try {
+            LOGGER.debug("Placing the caret at the paragraph end and pressing Enter");
+            page.pressEnterAtParagraphEnd();
+            enterSent = true;
+            LOGGER.debug("Pressed Enter; waiting for the new empty paragraph");
+            page.waitForParagraphEnterResult();
+            page.waitForParagraphCountInTargetSection(originalCount + 1);
+            java.util.List<String> actual = page.getEditedSectionParagraphTexts();
+            LOGGER.info(PARAGRAPH_TEXT_AFTER_ENTER_MSG, actual);
+            LOGGER.debug("Asserting empty paragraph placement and unchanged original text");
+            Assert.assertEquals(actual, page.getExpectedParagraphTextsAfterEnter(),
+                    "Enter at the end should insert an empty paragraph and preserve original text");
+        } finally {
+            if (enterSent) {
+                LOGGER.debug("Undoing this test's paragraph Enter action");
+                page.undoParagraphSplit(originalCount);
+                LOGGER.debug("Original paragraph count and text restored after Undo");
+            }
+        }
+        LOGGER.info(FINISHED_TEST_MSG, "verifyEnterAtParagraphEnd");
+    }
+
+    /** Lead case(s): TC-005; see docs/team-lead-paragraph-cases.md. */
+    @Test(groups = { MODULE_GROUP, HIGH_PRIORITY_GROUP }, description = "TC_32 | Verify Redo restores the undone paragraph split")
+    public void verifyRedoRestoresParagraphSplit() {
+        LOGGER.info(STARTING_TEST_MSG, "verifyRedoRestoresParagraphSplit");
+        DocumentEditorPageObjects1 page = editor();
+        int originalCount = page.getParagraphCountInTargetSection();
+        boolean splitPending = false;
+        try {
+            LOGGER.debug("Splitting the paragraph in the middle with Enter");
+            page.splitTargetParagraph();
+            splitPending = true;
+            page.waitForParagraphEnterResult();
+            LOGGER.debug("Undoing Enter and verifying original paragraph restoration");
+            page.undoParagraphSplit(originalCount);
+            splitPending = false;
+            LOGGER.debug("Redoing the undone Enter action");
+            page.redoParagraphSplit();
+            splitPending = true;
+            page.waitForParagraphEnterResult();
+            page.waitForParagraphCountInTargetSection(originalCount + 1);
+            java.util.List<String> actual = page.getEditedSectionParagraphTexts();
+            LOGGER.info("Paragraph text sequence after Redo: {}", actual);
+            LOGGER.debug("Asserting that Redo restored the same text split");
+            Assert.assertEquals(actual, page.getExpectedParagraphTextsAfterEnter(),
+                    "Redo should restore the original split point and both text portions");
+        } finally {
+            if (splitPending) {
+                LOGGER.debug("Undoing this test's restored paragraph split");
+                page.undoParagraphSplit(originalCount);
+                LOGGER.debug("Original paragraph count and text restored after final Undo");
+            }
+        }
+        LOGGER.info(FINISHED_TEST_MSG, "verifyRedoRestoresParagraphSplit");
+    }
+
+    /** Lead case(s): TC-008; see docs/team-lead-paragraph-cases.md. */
+    @Test(groups = { MODULE_GROUP, HIGH_PRIORITY_GROUP }, description = "TC_33 | Verify Bold affects only the selected paragraph word")
+    public void verifyApplyingBoldToParagraphWord() {
+        LOGGER.info(STARTING_TEST_MSG, "verifyApplyingBoldToParagraphWord");
+        checkParagraphWordFormatting(ParagraphFormat.BOLD);
+        LOGGER.info(FINISHED_TEST_MSG, "verifyApplyingBoldToParagraphWord");
+    }
+
+    /** Lead case(s): TC-009; see docs/team-lead-paragraph-cases.md. */
+    @Test(groups = { MODULE_GROUP, HIGH_PRIORITY_GROUP }, description = "TC_34 | Verify Italic affects only the selected paragraph word")
+    public void verifyApplyingItalicToParagraphWord() {
+        LOGGER.info(STARTING_TEST_MSG, "verifyApplyingItalicToParagraphWord");
+        checkParagraphWordFormatting(ParagraphFormat.ITALIC);
+        LOGGER.info(FINISHED_TEST_MSG, "verifyApplyingItalicToParagraphWord");
+    }
+
+    /** Lead case(s): TC-010; see docs/team-lead-paragraph-cases.md. */
+    @Test(groups = { MODULE_GROUP, HIGH_PRIORITY_GROUP }, description = "TC_35 | Verify Underline affects only the selected paragraph word")
+    public void verifyApplyingUnderlineToParagraphWord() {
+        LOGGER.info(STARTING_TEST_MSG, "verifyApplyingUnderlineToParagraphWord");
+        checkParagraphWordFormatting(ParagraphFormat.UNDERLINE);
+        LOGGER.info(FINISHED_TEST_MSG, "verifyApplyingUnderlineToParagraphWord");
+    }
+
+    /** Lead case(s): TC-011; see docs/team-lead-paragraph-cases.md. */
+    @Test(groups = { MODULE_GROUP, HIGH_PRIORITY_GROUP }, description = "TC_36 | Verify Subscript affects only the selected paragraph word")
+    public void verifyApplyingSubscriptToParagraphWord() {
+        LOGGER.info(STARTING_TEST_MSG, "verifyApplyingSubscriptToParagraphWord");
+        checkParagraphWordFormatting(ParagraphFormat.SUBSCRIPT);
+        LOGGER.info(FINISHED_TEST_MSG, "verifyApplyingSubscriptToParagraphWord");
+    }
+
+    /** Lead case(s): TC-012; see docs/team-lead-paragraph-cases.md. */
+    @Test(groups = { MODULE_GROUP, HIGH_PRIORITY_GROUP }, description = "TC_37 | Verify Superscript affects only the selected paragraph word")
+    public void verifyApplyingSuperscriptToParagraphWord() {
+        LOGGER.info(STARTING_TEST_MSG, "verifyApplyingSuperscriptToParagraphWord");
+        checkParagraphWordFormatting(ParagraphFormat.SUPERSCRIPT);
+        LOGGER.info(FINISHED_TEST_MSG, "verifyApplyingSuperscriptToParagraphWord");
+    }
+
+    /** Lead case(s): TC-013; see docs/team-lead-paragraph-cases.md. */
+    @Test(groups = { MODULE_GROUP, HIGH_PRIORITY_GROUP }, description = "TC_38 | Verify Strikethrough affects only the selected paragraph word")
+    public void verifyApplyingStrikethroughToParagraphWord() {
+        LOGGER.info(STARTING_TEST_MSG, "verifyApplyingStrikethroughToParagraphWord");
+        checkParagraphWordFormatting(ParagraphFormat.STRIKETHROUGH);
+        LOGGER.info(FINISHED_TEST_MSG, "verifyApplyingStrikethroughToParagraphWord");
+    }
+
+    /** Shared steps keep six distinct formatting scenarios consistent without copying their implementation. */
+    private void checkParagraphWordFormatting(ParagraphFormat format) {
+        DocumentEditorPageObjects1 page = editor();
+        LOGGER.debug("Reading original paragraph character styles for {}", format);
+        java.util.List<java.util.List<String>> original = page.getParagraphCharacterStyles();
+        LOGGER.info("Original paragraph character count: {}", original.size());
+        LOGGER.debug("Checking that the target word is not already formatted with {}", format);
+        page.requireParagraphWordFormatIsOff(format, original);
+        LOGGER.debug("Selecting the configured plain paragraph word");
+        page.selectParagraphWord();
+        LOGGER.debug("Selected paragraph word; applying {}", format);
+        boolean applied = false;
+        try {
+            page.applyParagraphFormatting(format);
+            applied = true;
+            LOGGER.debug("Applied {}; waiting for formatting and unchanged surrounding text", format);
+            page.waitForParagraphWordFormatting(format, original);
+            boolean actual = page.isOnlyParagraphWordFormatted(format, original);
+            LOGGER.info("Only the selected paragraph word has {} and surrounding text is unchanged: {}", format, actual);
+            LOGGER.debug("Asserting isolated paragraph word formatting for {}", format);
+            Assert.assertTrue(actual,
+                    "Only the selected word should gain " + format + "; paragraph text and unselected styles must remain unchanged");
+        } finally {
+            if (applied) {
+                LOGGER.debug("Undoing this test's paragraph {} change", format);
+                page.undoParagraphFormatting(original);
+                LOGGER.debug("Paragraph text and original character styles restored after Undo");
+            }
+        }
     }
 
 }

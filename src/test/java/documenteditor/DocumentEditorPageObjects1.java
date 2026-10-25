@@ -16,6 +16,8 @@ public class DocumentEditorPageObjects1 extends BasePage {
 
     private static final String SWITCHING_TO_MAIN_MSG = "Switching to main document";
     private static final String SWITCHED_TO_MAIN_MSG = "Switched to main document";
+    private static final String ITALIC_STYLE = "italic";
+    private static final String UNDERLINE_STYLE = "underline";
     private static final String SPACE = " ";
     private static final String CLASS_ATTRIBUTE = "class";
     private static final String WHITESPACE_PATTERN = "\\s+";
@@ -250,14 +252,14 @@ public class DocumentEditorPageObjects1 extends BasePage {
 
     private static final By HEADING = By.cssSelector("div[data-element='heading']");
     private static final By UNDO_BUTTON = By.cssSelector("a.cke_button.cke_button__undo");
-    private static final String FIND_HEADING_WORD =
+    private static final String FIND_TEXT_WORD =
             "const root=arguments[0], word=arguments[1];"
             + "const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);"
             + "let node, match=null; while(node=walker.nextNode()){"
             + "const start=node.textContent.indexOf(word); if(start>=0){"
-            + "if(match) throw new Error('Heading word is ambiguous');"
+            + "if(match) throw new Error('Target word is ambiguous');"
             + "match={node:node,start:start};}}"
-            + "if(!match) throw new Error('Heading word was not found');"
+            + "if(!match) throw new Error('Target word was not found');"
             + "node=match.node;";
 
     private WebElement locateHeadingInEditor() {
@@ -278,41 +280,55 @@ public class DocumentEditorPageObjects1 extends BasePage {
 
     /** Select the exact heading word through the editor's own selection model. */
     public void selectHeadingWord() {
-        String expected = normalizeEditorText(a_testbase.BaseClass.getConfig(HEADING_WORD_CONFIG));
         try {
-            WebElement heading = locateHeadingInEditor();
-            js.executeScript(FIND_HEADING_WORD + """
-                    const library = parent.CKEDITOR;
-                    const editor = library && Object.values(library.instances)
-                        .find(e => e.status === 'ready' && e.document?.$ === document);
-                    if (editor) {
-                        editor.focus();
-                        const range = editor.createRange();
-                        const textNode = new library.dom.node(node);
-                        range.setStart(textNode, match.start);
-                        range.setEnd(textNode, match.start + word.length);
-                        editor.getSelection().selectRanges([range]);
-                        editor.forceNextSelectionCheck();
-                        editor.selectionChange(true);
-                    } else {
-                        arguments[0].closest('[contenteditable=true]')?.focus();
-                        const range = document.createRange();
-                        range.setStart(node, match.start);
-                        range.setEnd(node, match.start + word.length);
-                        const selection = window.getSelection();
-                        selection.removeAllRanges();
-                        selection.addRange(range);
-                    }
-                    """, heading, expected);
-            mywait.withMessage("The configured heading word must be selected before applying formatting")
-                    .until(driver -> Boolean.TRUE.equals(js.executeScript(
-                    "const s=window.getSelection();return !!s && !s.isCollapsed"
-                    + " && arguments[0].contains(s.anchorNode) && arguments[0].contains(s.focusNode)"
-                    + " && s.toString().replace(/[\\u200B\\u2063\\uFEFF]/g,'').trim()===arguments[1];",
-                    heading, expected)));
+            selectEditorWord(locateHeadingInEditor(),
+                    normalizeEditorText(a_testbase.BaseClass.getConfig(HEADING_WORD_CONFIG)));
         } finally {
             switchToMainDocument(getDriver);
         }
+    }
+
+    private void selectEditorWord(WebElement root, String expected) {
+        js.executeScript(FIND_TEXT_WORD + """
+                const library = parent.CKEDITOR;
+                const editor = library && Object.values(library.instances)
+                    .find(e => e.status === 'ready' && e.document?.$ === document);
+                if (editor) {
+                    editor.focus();
+                    const range = editor.createRange();
+                    const textNode = new library.dom.node(node);
+                    range.setStart(textNode, match.start);
+                    range.setEnd(textNode, match.start + word.length);
+                    editor.getSelection().selectRanges([range]);
+                    editor.forceNextSelectionCheck();
+                    editor.selectionChange(true);
+                } else {
+                    arguments[0].closest('[contenteditable=true]')?.focus();
+                    const range = document.createRange();
+                    range.setStart(node, match.start);
+                    range.setEnd(node, match.start + word.length);
+                    const selection = window.getSelection();
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                }
+                """, root, expected);
+        mywait.withMessage("The configured text word must be selected before applying formatting")
+                .until(driver -> Boolean.TRUE.equals(js.executeScript(
+                "const s=window.getSelection();return !!s && !s.isCollapsed"
+                + " && arguments[0].contains(s.anchorNode) && arguments[0].contains(s.focusNode)"
+                + " && s.toString().replace(/[\\u200B\\u2063\\uFEFF]/g,'').trim()===arguments[1];",
+                root, expected)));
+    }
+
+    public void selectParagraphWord() {
+        LOGGER.debug("Selecting the configured paragraph word");
+        try {
+            selectEditorWord(locateParagraphInEditor(),
+                    normalizeEditorText(a_testbase.BaseClass.getConfig(PARAGRAPH_WORD_CONFIG)));
+        } finally {
+            switchToMainDocument(getDriver);
+        }
+        LOGGER.debug("Selected the configured paragraph word");
     }
 
     public void requireHeadingBoldIsOff() {
@@ -326,7 +342,7 @@ public class DocumentEditorPageObjects1 extends BasePage {
     public boolean isHeadingWordExplicitlyBold() {
         try {
             WebElement heading = locateHeadingInEditor();
-            return Boolean.TRUE.equals(js.executeScript(FIND_HEADING_WORD
+            return Boolean.TRUE.equals(js.executeScript(FIND_TEXT_WORD
                     + "const bold=node.parentElement.closest('[data-element=\"b\"][data-style=\"bold\"],b,strong');"
                     + "return !!bold && root.contains(bold)"
                     + " && parseInt(getComputedStyle(node.parentElement).fontWeight,10)>=700;",
@@ -382,7 +398,7 @@ public class DocumentEditorPageObjects1 extends BasePage {
     public List<String> getHeadingWordFormattingSnapshot() {
         try {
             WebElement heading = locateHeadingInEditor();
-            return (List<String>) js.executeScript(FIND_HEADING_WORD
+            return (List<String>) js.executeScript(FIND_TEXT_WORD
                     + "const bold=node.parentElement.closest('[data-element=\"b\"][data-style=\"bold\"],b,strong');"
                     + "return [root.textContent.replace(/\\u200b/g,'').trim(),"
                     + "getComputedStyle(node.parentElement).fontWeight,"
@@ -430,7 +446,7 @@ public class DocumentEditorPageObjects1 extends BasePage {
     private boolean hasHeadingWordStyle(String selector, String property, String expectedValue) {
         try {
             WebElement heading = locateHeadingInEditor();
-            return Boolean.TRUE.equals(js.executeScript(FIND_HEADING_WORD
+            return Boolean.TRUE.equals(js.executeScript(FIND_TEXT_WORD
                     + "const format=node.parentElement.closest(arguments[2]);"
                     + "if(!format || !root.contains(format))return false;"
                     + "for(let e=node.parentElement;e && root.contains(e);e=e.parentElement){"
@@ -449,7 +465,7 @@ public class DocumentEditorPageObjects1 extends BasePage {
     }
 
     public boolean isHeadingWordItalic() {
-        return hasHeadingWordStyle("i,em,[data-element='i'],[data-style='italic']", "font-style", "italic");
+        return hasHeadingWordStyle("i,em,[data-element='i'],[data-style='italic']", "font-style", ITALIC_STYLE);
     }
 
     public void applyItalicToSelection() {
@@ -474,7 +490,7 @@ public class DocumentEditorPageObjects1 extends BasePage {
 
     public boolean isHeadingWordUnderlined() {
         return hasHeadingWordStyle("u,[data-element='u'],[data-style='underline']",
-                "text-decoration-line", "underline");
+                "text-decoration-line", UNDERLINE_STYLE);
     }
 
     public void applyUnderlineToSelection() {
@@ -497,7 +513,7 @@ public class DocumentEditorPageObjects1 extends BasePage {
 
     private WebElement locateTargetParagraphOrListItem() {
         return locateInEditor(() -> {
-            String expected = normalizeEditorText(a_testbase.BaseClass.getConfig("editorParagraphText"));
+            String expected = normalizeEditorText(a_testbase.BaseClass.getConfig(EDITOR_PARAGRAPH_CONFIG));
             return findElementsNow(PARAGRAPH_OR_LIST_ITEM).stream()
                     .filter(element -> element.isDisplayed()
                             && expected.equals(normalizeEditorText(element.getText())))
@@ -560,7 +576,7 @@ public class DocumentEditorPageObjects1 extends BasePage {
     private WebElement locateParagraphInEditor() {
         return locateInEditor(() -> {
             WebElement match = null;
-            String expected = normalizeEditorText(a_testbase.BaseClass.getConfig("editorParagraphText"));
+            String expected = normalizeEditorText(a_testbase.BaseClass.getConfig(EDITOR_PARAGRAPH_CONFIG));
             for (WebElement paragraph : findElementsNow(PARAGRAPH)) {
                 if (paragraph.isDisplayed() && normalizeEditorText(paragraph.getText()).equals(expected)) {
                     if (match != null) {
@@ -708,8 +724,21 @@ public class DocumentEditorPageObjects1 extends BasePage {
 
     /** Set a collapsed caret at the configured text boundary, then send native Enter. */
     public void splitTargetParagraph() {
+        pressEnterInParagraph("middle");
+    }
+
+    public void pressEnterAtParagraphBeginning() {
+        pressEnterInParagraph("beginning");
+    }
+
+    public void pressEnterAtParagraphEnd() {
+        pressEnterInParagraph("end");
+    }
+
+    private void pressEnterInParagraph(String positionName) {
         try {
             WebElement paragraph = locateParagraphInEditor();
+            captureParagraphEdit(paragraph, positionName);
             clickInsideEditorText(paragraph);
             js.executeScript("""
                     const root = arguments[0];
@@ -736,21 +765,24 @@ public class DocumentEditorPageObjects1 extends BasePage {
                             positions.push({node, offset});
                         }
                     }
-                    const index = text.indexOf(boundary);
+                    let index = text.indexOf(boundary);
+                    if (arguments[2] === 'beginning') index = 0;
+                    if (arguments[2] === 'end') index = positions.length - 1;
                     if (index < 0) throw new Error('Split boundary not found in normalised paragraph text');
-                    if (text.indexOf(boundary, index + 1) >= 0)
+                    if (arguments[2] === 'middle' && text.indexOf(boundary, index + 1) >= 0)
                         throw new Error('Split boundary is ambiguous in paragraph');
                     const position = positions[index];
                     const range = document.createRange();
-                    range.setStart(position.node, position.offset);
+                    const caretOffset = position.offset + (arguments[2] === 'end' ? 1 : 0);
+                    range.setStart(position.node, caretOffset);
                     range.collapse(true);
                     const selection = window.getSelection();
                     selection.removeAllRanges();
                     selection.addRange(range);
                     if (!selection.isCollapsed || selection.anchorNode !== position.node
-                            || selection.anchorOffset !== position.offset)
+                            || selection.anchorOffset !== caretOffset)
                         throw new Error('Caret was not placed at the split boundary');
-                    """, paragraph, a_testbase.BaseClass.getConfig("paragraphSplitBefore"));
+                    """, paragraph, a_testbase.BaseClass.getConfig(PARAGRAPH_SPLIT_CONFIG), positionName);
             LOGGER.debug("Pressing Enter at the configured paragraph split point");
             action.sendKeys(Keys.ENTER).perform();
             LOGGER.debug("Pressed Enter at the paragraph split point");
@@ -762,5 +794,217 @@ public class DocumentEditorPageObjects1 extends BasePage {
     public void undoParagraphSplit(int originalCount) {
         clickUndo();
         waitForParagraphCountInTargetSection(originalCount);
+        if (originalParagraphTexts != null) {
+            mywait.until(driver -> originalParagraphTexts.equals(getEditedSectionParagraphTexts()));
+        }
     }
+    // Column order returned by getParagraphCharacterStyles().
+    private static final int CHARACTER_INDEX = 0;
+    private static final int FONT_WEIGHT_INDEX = 1;
+    private static final int FONT_STYLE_INDEX = 2;
+    private static final int TEXT_DECORATION_INDEX = 3;
+    private static final int FONT_SIZE_INDEX = 4;
+    private static final int VERTICAL_ALIGN_INDEX = 5;
+    private static final int BOLD_FONT_WEIGHT = 700;
+    private static final String PARAGRAPH_WORD_CONFIG = "paragraphFormatWord";
+    private static final String EDITOR_PARAGRAPH_CONFIG = "editorParagraphText";
+    private static final String PARAGRAPH_SPLIT_CONFIG = "paragraphSplitBefore";
+    private String paragraphSectionReference;
+    private List<String> originalParagraphTexts;
+    private List<String> expectedParagraphTexts;
+
+    public enum ParagraphFormat {
+        BOLD("bold"), ITALIC(ITALIC_STYLE), UNDERLINE(UNDERLINE_STYLE),
+        SUBSCRIPT("subscript"), SUPERSCRIPT("superscript"), STRIKETHROUGH("strike");
+
+        private final String command;
+
+        ParagraphFormat(String command) {
+            this.command = command;
+        }
+
+        private By getButton() {
+            return By.cssSelector("a.cke_button.cke_button__" + command);
+        }
+    }
+
+    private void captureParagraphEdit(WebElement paragraph, String position) {
+        WebElement section = paragraph.findElement(By.xpath("ancestor::*[@data-element='section'][1]"));
+        paragraphSectionReference = section.getAttribute("inno_ref");
+        if (paragraphSectionReference == null || !paragraphSectionReference.matches("[0-9]+")) {
+            throw new IllegalStateException("Paragraph section needs a stable runtime reference");
+        }
+        originalParagraphTexts = readSectionParagraphTexts(section);
+        String text = normalizeEditorText(a_testbase.BaseClass.getConfig(EDITOR_PARAGRAPH_CONFIG));
+        int index = originalParagraphTexts.indexOf(text);
+        if (index < 0 || originalParagraphTexts.lastIndexOf(text) != index) {
+            throw new IllegalStateException("Target paragraph must be unique in its section");
+        }
+        int split = switch (position) {
+            case "beginning" -> 0;
+            case "end" -> text.length();
+            case "middle" -> text.indexOf(a_testbase.BaseClass.getConfig(PARAGRAPH_SPLIT_CONFIG));
+            default -> throw new IllegalArgumentException("Unsupported paragraph caret position: " + position);
+        };
+        if (split < 0) {
+            throw new IllegalStateException("Configured paragraph split boundary is missing");
+        }
+        java.util.ArrayList<String> expected = new java.util.ArrayList<>(originalParagraphTexts);
+        expected.set(index, text.substring(0, split).trim());
+        expected.add(index + 1, text.substring(split).trim());
+        expectedParagraphTexts = List.copyOf(expected);
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<String> readSectionParagraphTexts(WebElement section) {
+        List<String> texts = (List<String>) js.executeScript("""
+                const root=arguments[0];
+                return [...root.querySelectorAll('[data-element=p]')]
+                    .filter(p=>p.parentElement.closest('[data-element=section]')===root
+                        && !p.closest('li,[data-element=li]'))
+                    .map(p=>p.textContent.replace(/[\u200B\u2063\uFEFF]/g,'')
+                        .replace(/\\s+/g,' ').trim());
+                """, section);
+        return List.copyOf(texts);
+    }
+
+    public List<String> getEditedSectionParagraphTexts() {
+        try {
+            WebElement section = locateInEditor(() -> findElementsNow(By.cssSelector(
+                    "[data-element='section'][inno_ref='" + paragraphSectionReference + "']"))
+                    .stream().filter(WebElement::isDisplayed).findFirst().orElse(null));
+            return readSectionParagraphTexts(section);
+        } finally {
+            switchToMainDocument(getDriver);
+        }
+    }
+
+    public List<String> getOriginalParagraphTexts() {
+        return originalParagraphTexts;
+    }
+
+    public List<String> getExpectedParagraphTextsAfterEnter() {
+        return expectedParagraphTexts;
+    }
+
+    public void waitForParagraphEnterResult() {
+        LOGGER.debug("Waiting for the exact paragraph text sequence after Enter");
+        mywait.until(driver -> expectedParagraphTexts.equals(getEditedSectionParagraphTexts()));
+        LOGGER.debug("Paragraph sequence matches the expected Enter result");
+    }
+
+    public void redoParagraphSplit() {
+        LOGGER.debug("Redoing the undone paragraph Enter action");
+        clickEnabledCommand(REDO_BUTTON);
+        LOGGER.debug("Clicked Redo for the paragraph Enter action");
+    }
+
+    /** A per-character visual snapshot ignores tracking IDs and invisible editor markers. */
+    @SuppressWarnings("unchecked")
+    public List<List<String>> getParagraphCharacterStyles() {
+        try {
+            WebElement paragraph = locateParagraphInEditor();
+            return (List<List<String>>) js.executeScript("""
+                    const root=arguments[0], rows=[];
+                    const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
+                    let node;
+                    while(node=walker.nextNode()) {
+                        const style=getComputedStyle(node.parentElement);
+                        const decorations=new Set(); let align=style.verticalAlign;
+                        for(let e=node.parentElement;e && root.contains(e);e=e.parentElement) {
+                            const css=getComputedStyle(e);
+                            for(const part of css.textDecorationLine.split(' '))
+                                if(part!=='none')decorations.add(part);
+                            if(css.verticalAlign==='sub'||css.verticalAlign==='super')align=css.verticalAlign;
+                        }
+                        for(const character of node.data) {
+                            if(/[\u200B\u2063\uFEFF]/.test(character))continue;
+                            const char=/\\s/.test(character)?' ':character;
+                            if(char===' ' && (!rows.length||rows.at(-1)[0]===' '))continue;
+                            rows.push([char,style.fontWeight,style.fontStyle,
+                                [...decorations].sort().join(' '),style.fontSize,align]);
+                        }
+                    }
+                    while(rows.at(-1)?.[0]===' ')rows.pop();
+                    return rows;
+                    """, paragraph);
+        } finally {
+            switchToMainDocument(getDriver);
+        }
+    }
+
+    private int getParagraphWordStart(List<List<String>> styles) {
+        String text = styles.stream().map(row -> row.get(CHARACTER_INDEX)).collect(java.util.stream.Collectors.joining());
+        String word = a_testbase.BaseClass.getConfig(PARAGRAPH_WORD_CONFIG);
+        int start = text.indexOf(word);
+        if (start < 0 || text.indexOf(word, start + word.length()) >= 0) {
+            throw new IllegalStateException("Formatting word must occur exactly once in the paragraph");
+        }
+        return start;
+    }
+
+    private boolean isCharacterFormatted(List<String> row, List<String> original, ParagraphFormat format) {
+        return switch (format) {
+            case BOLD -> Double.parseDouble(row.get(FONT_WEIGHT_INDEX)) >= BOLD_FONT_WEIGHT;
+            case ITALIC -> ITALIC_STYLE.equals(row.get(FONT_STYLE_INDEX));
+            case UNDERLINE -> row.get(TEXT_DECORATION_INDEX).contains(UNDERLINE_STYLE);
+            case STRIKETHROUGH -> row.get(TEXT_DECORATION_INDEX).contains("line-through");
+            case SUBSCRIPT, SUPERSCRIPT -> row.get(VERTICAL_ALIGN_INDEX).equals(format == ParagraphFormat.SUBSCRIPT ? "sub" : "super")
+                    && Double.parseDouble(row.get(FONT_SIZE_INDEX).replace("px", ""))
+                    < Double.parseDouble(original.get(FONT_SIZE_INDEX).replace("px", ""));
+        };
+    }
+
+    public void requireParagraphWordFormatIsOff(ParagraphFormat format, List<List<String>> original) {
+        int start = getParagraphWordStart(original);
+        int length = a_testbase.BaseClass.getConfig(PARAGRAPH_WORD_CONFIG).length();
+        for (int index = start; index < start + length; index++) {
+            if (isCharacterFormatted(original.get(index), original.get(index), format)
+                    || (format == ParagraphFormat.SUBSCRIPT && "sub".equals(original.get(index).get(VERTICAL_ALIGN_INDEX)))
+                    || (format == ParagraphFormat.SUPERSCRIPT && "super".equals(original.get(index).get(VERTICAL_ALIGN_INDEX)))) {
+                throw new IllegalStateException("Paragraph word already has the tested formatting: " + format);
+            }
+        }
+    }
+
+    public void applyParagraphFormatting(ParagraphFormat format) {
+        LOGGER.debug("Applying paragraph word formatting: {}", format);
+        clickEnabledCommand(format.getButton());
+        LOGGER.debug("Applied paragraph word formatting: {}", format);
+    }
+
+    public boolean isOnlyParagraphWordFormatted(ParagraphFormat format, List<List<String>> original) {
+        List<List<String>> actual = getParagraphCharacterStyles();
+        if (actual.size() != original.size()) {
+            return false;
+        }
+        int start = getParagraphWordStart(original);
+        int length = a_testbase.BaseClass.getConfig(PARAGRAPH_WORD_CONFIG).length();
+        for (int index = 0; index < original.size(); index++) {
+            if (!actual.get(index).get(CHARACTER_INDEX).equals(original.get(index).get(CHARACTER_INDEX))) {
+                return false;
+            }
+            if (index >= start && index < start + length) {
+                if (!isCharacterFormatted(actual.get(index), original.get(index), format)) {
+                    return false;
+                }
+            } else if (!actual.get(index).equals(original.get(index))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public void waitForParagraphWordFormatting(ParagraphFormat format, List<List<String>> original) {
+        waitForCommandActive(format.getButton());
+        mywait.until(driver -> isOnlyParagraphWordFormatted(format, original));
+    }
+
+    public void undoParagraphFormatting(List<List<String>> original) {
+        LOGGER.debug("Undoing this test's paragraph word formatting");
+        clickUndo();
+        mywait.until(driver -> original.equals(getParagraphCharacterStyles()));
+        LOGGER.debug("Paragraph text and all character styles restored after Undo");
+    }
+
 }
