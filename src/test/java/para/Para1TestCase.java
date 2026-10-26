@@ -1,6 +1,7 @@
 package para;
 
 import java.util.List;
+import java.util.Locale;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.testng.Assert;
@@ -925,6 +926,90 @@ public class Para1TestCase extends BaseClass {
             }
         }
         logger.info(FINISHED_TEST_MSG, "verifyApplyingStrikethroughToParagraphWord");
+    }
+
+    @Test(enabled = true, groups = { "Para", "P2-Para" },
+            description = "TC_40 | Verify Uppercase changes only the selected paragraph word")
+    public void verifyUppercaseChangesOnlySelectedParagraphWord() {
+        logger.info(STARTING_TEST_MSG, "verifyUppercaseChangesOnlySelectedParagraphWord");
+        logger.debug(CALLING_LOGIN_AND_SEARCH_FILE_EDIT_MSG);
+        ReusableMethods.loginAndSearchFileClickEdit();
+        logger.debug(LOG_LOGIN_AND_SEARCH_FILE);
+        logger.debug(INITIALISING_PARAPAGEOBJECTS1_PAGE_OBJECT_MSG);
+        ParaPageObjects1 p = new ParaPageObjects1(getDriver());
+        logger.debug(PAGE_OBJECT_INITIALISED_MSG);
+        logger.debug(SWITCHING_TO_EDITOR_FRAME_MSG);
+        getDriver().switchTo().frame(p.getEditorFrame());
+        logger.debug(LOG_SWITCHED_TO_EDITOR_FRAME);
+        logger.debug("Reading the original paragraph and checking the Case Change word");
+        String originalText = p.getParagraphTextInVe();
+        String word = getConfig("paragraphFormatWord");
+        int start = originalText.indexOf(word);
+        Assert.assertTrue(!word.isBlank() && start >= 0
+                && originalText.indexOf(word, start + word.length()) < 0,
+                "The configured Case Change word must occur exactly once in the paragraph");
+        String uppercaseWord = word.toUpperCase(Locale.ROOT);
+        Assert.assertNotEquals(word, uppercaseWord, "The selected word must contain lowercase letters");
+        String expectedText = originalText.substring(0, start) + uppercaseWord
+                + originalText.substring(start + word.length());
+        logger.debug("Original paragraph captured and Case Change preconditions verified");
+        logger.debug(SELECTING_THE_PARAGRAPH_WORD_IN_VE_MSG);
+        p.selectParagraphWord();
+        logger.debug(PARAGRAPH_WORD_SELECTED_MSG);
+        logger.debug(SWITCHING_TO_DEFAULT_CONTENT_MSG);
+        getDriver().switchTo().defaultContent();
+        logger.debug(LOG_SWITCH_DEFAULT_CONTENT);
+        boolean applied = false;
+        try {
+            logger.debug("Opening the Case Change toolbar menu");
+            p.clickCaseChange();
+            logger.debug("Case Change menu opened");
+            logger.debug("Switching to the Case Change menu frame");
+            getDriver().switchTo().frame(p.getCaseChangeMenuFrame());
+            logger.debug("Switched to the Case Change menu frame");
+            logger.debug("Selecting Uppercase from the Case Change menu");
+            p.clickUppercase();
+            applied = true;
+            logger.debug("Uppercase selected");
+            logger.debug(SWITCHING_TO_DEFAULT_CONTENT_MSG);
+            getDriver().switchTo().defaultContent();
+            logger.debug(LOG_SWITCH_DEFAULT_CONTENT);
+            logger.debug(SWITCHING_TO_EDITOR_FRAME_MSG);
+            getDriver().switchTo().frame(p.getEditorFrame());
+            logger.debug(LOG_SWITCHED_TO_EDITOR_FRAME);
+            logger.debug("Waiting for the selected word to become uppercase");
+            p.waitForParagraphTextInVe(expectedText);
+            logger.debug("Uppercase paragraph result is available");
+            String actualText = p.getParagraphTextInVe();
+            logger.info("Uppercase changes only the selected word: {}", expectedText.equals(actualText));
+            logger.debug("Asserting the full paragraph matches with only the selected word converted");
+            Assert.assertEquals(actualText, expectedText,
+                    "Only the selected word should become uppercase; remaining text must stay unchanged");
+            logger.debug("Uppercase paragraph assertion completed");
+        } finally {
+            logger.debug(SWITCHING_TO_DEFAULT_CONTENT_MSG);
+            getDriver().switchTo().defaultContent();
+            logger.debug(LOG_SWITCH_DEFAULT_CONTENT);
+            if (applied) {
+                logger.debug("Clicking Undo to restore the original letter case");
+                p.clickUndo();
+                logger.debug(CLEANUP_UNDO_CLICKED_MSG);
+                logger.debug(SWITCHING_TO_EDITOR_FRAME_MSG);
+                getDriver().switchTo().frame(p.getEditorFrame());
+                logger.debug(LOG_SWITCHED_TO_EDITOR_FRAME);
+                logger.debug(WAITING_FOR_ORIGINAL_PARAGRAPH_TEXT_IN_VE_MSG);
+                p.waitForParagraphTextInVe(originalText);
+                String restoredText = p.getParagraphTextInVe();
+                logger.info("Original paragraph restored after Uppercase Undo: {}", originalText.equals(restoredText));
+                logger.debug("Asserting Undo restores the original paragraph text");
+                Assert.assertEquals(restoredText, originalText, "Undo must restore the original letter case");
+                logger.debug(ORIGINAL_PARAGRAPH_TEXT_RESTORED_MSG);
+                logger.debug(SWITCHING_TO_DEFAULT_CONTENT_MSG);
+                getDriver().switchTo().defaultContent();
+                logger.debug(LOG_SWITCH_DEFAULT_CONTENT);
+            }
+        }
+        logger.info(FINISHED_TEST_MSG, "verifyUppercaseChangesOnlySelectedParagraphWord");
     }
 
 }

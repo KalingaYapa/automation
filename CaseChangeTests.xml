@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<suite name="Uppercase Formatting Check" parallel="none" thread-count="1">
+    <listeners>
+        <listener class-name="b_utilities.ExtentReportManager" />
+        <listener class-name="b_utilities.AnnotationTransfer" />
+    </listeners>
+    <parameter name="browser" value="chrome" />
+    <test name="RetryMultipleFailedTestcases">
+        <groups>
+            <run>
+                <include name="Para" />
+            </run>
+        </groups>
+        <classes>
+            <class name="para.Para1TestCase">
+                <methods>
+                    <include name="verifyUppercaseChangesOnlySelectedParagraphWord" />
+                </methods>
+            </class>
+        </classes>
+    </test>
+</suite>

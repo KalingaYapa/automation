@@ -41,8 +41,16 @@ public class ParaPageObjects1 extends BasePage {
     @FindBy(xpath = "//a[contains(concat(' ',normalize-space(@class),' '),' cke_button__redo ')]")
     private WebElement redoButton;
 
+    @FindBy(xpath = "//a[contains(concat(' ',normalize-space(@class),' '),' cke_button__casechange ')]")
+    private WebElement caseChangeButton;
+    @FindBy(xpath = "//iframe[contains(concat(' ',normalize-space(@class),' '),' cke_panel_frame ')]")
+    private List<WebElement> caseChangeMenuFrames;
+    @FindBy(xpath = "//a[@role='menuitem' and @aria-label='UPPERCASE']")
+    private WebElement uppercaseMenuItem;
+
     // Reuse the existing technical selection, section and computed-style readers.
     private final DocumentEditorPageObjects1 editor;
+    private String targetParagraphReference;
 
     public ParaPageObjects1(WebDriver driver) {
         super(driver);
@@ -71,6 +79,26 @@ public class ParaPageObjects1 extends BasePage {
             }
             return target;
         });
+    }
+
+    /** Retain the paragraph identity because its text changes during Case Change. */
+    public String getParagraphTextInVe() {
+        if (targetParagraphReference == null) {
+            targetParagraphReference = getTargetParagraph().getAttribute("inno_ref");
+            if (targetParagraphReference == null || targetParagraphReference.isBlank()) {
+                throw new IllegalStateException("Target paragraph needs a reference for Case Change verification");
+            }
+        }
+        return mywait.until(driver -> paragraphsInVe.stream()
+                .filter(paragraph -> targetParagraphReference.equals(paragraph.getAttribute("inno_ref")))
+                .filter(WebElement::isDisplayed)
+                .map(paragraph -> paragraph.getText().replaceAll("[\\u200B\\u2063\\uFEFF]", "")
+                        .replaceAll("[\\s\\p{Z}]+", " ").trim())
+                .findFirst().orElse(null));
+    }
+
+    public void waitForParagraphTextInVe(String expected) {
+        mywait.until(driver -> expected.equals(getParagraphTextInVe()));
     }
 
     public void rememberTargetSection() {
@@ -171,6 +199,20 @@ public class ParaPageObjects1 extends BasePage {
     private boolean isButtonActive(WebElement button) {
         return mywait.until(driver -> button.isDisplayed()
                 && List.of(button.getAttribute("class").split("\\s+")).contains("cke_button_on"));
+    }
+
+    public void clickCaseChange() {
+        clickEnabledButton(caseChangeButton);
+    }
+
+    public WebElement getCaseChangeMenuFrame() {
+        return mywait.until(driver -> caseChangeMenuFrames.stream().filter(WebElement::isDisplayed)
+                .findFirst().orElse(null));
+    }
+
+    /** Called inside the visible Case Change menu frame. */
+    public void clickUppercase() {
+        clickEnabledButton(uppercaseMenuItem);
     }
 
     public void clickBold() {
