@@ -36,6 +36,95 @@ public class DocumentEditor1TestCase extends BaseClass {
     private static final String STARTING_TEST_MSG = "Starting test: {}";
     private static final String FINISHED_TEST_MSG = "Finished test: {} - PASSED";
 
+    @Test(enabled = true, groups = { "DocumentEditor", "P2-DocumentEditor" },
+            description = "TC_42 | Verify switching between Visual Editor and Code View (manual TC-017)")
+    public void verifySwitchingBetweenVisualEditorAndCodeViewPreservesContent() {
+        logger.info(STARTING_TEST_MSG, "verifySwitchingBetweenVisualEditorAndCodeViewPreservesContent");
+        logger.debug(CALLING_LOGIN_AND_SEARCH_FILE_EDIT_MSG);
+        ReusableMethods.loginAndSearchFileClickEdit();
+        logger.debug(LOG_LOGIN_AND_SEARCH_FILE);
+        logger.debug(INITIALISING_DOCUMENTEDITORPAGEOBJECTS1_PAGE_OBJECT_MSG);
+        DocumentEditorPageObjects1 p = new DocumentEditorPageObjects1(getDriver());
+        logger.debug(PAGE_OBJECT_INITIALISED_MSG);
+        boolean restoreVisualEditor = false;
+        Throwable scenarioFailure = null;
+        try {
+            logger.debug("Waiting for initial Visual Editor display");
+            boolean initialVisualEditor = p.isVisualEditorDisplayed();
+            logger.info("Initial Visual Editor displayed: {}", initialVisualEditor);
+            logger.debug("Asserting Visual Editor is initially active");
+            Assert.assertTrue(initialVisualEditor, "The document must open in Visual Editor");
+            logger.debug("Initial view assertion passed");
+            logger.debug(SWITCHING_TO_EDITOR_FRAME_MSG);
+            getDriver().switchTo().frame(p.getEditorFrame());
+            logger.debug(LOG_SWITCHED_TO_EDITOR_FRAME);
+            logger.debug("Capturing the complete original document markup");
+            String originalMarkup = p.getVisualDocumentMarkup();
+            String originalText = p.getDocumentTextSnapshot(originalMarkup, false);
+            logger.info("Original document markup length={}, text snapshot length={}",
+                    originalMarkup.length(), originalText.length());
+            logger.debug("Asserting the original document contains content");
+            Assert.assertFalse(originalText.isBlank(), "The document must contain text before switching views");
+            logger.debug("Original document content assertion passed");
+            logger.debug(SWITCHING_TO_DEFAULT_CONTENT_MSG);
+            getDriver().switchTo().defaultContent();
+            logger.debug(LOG_SWITCH_DEFAULT_CONTENT);
+            restoreVisualEditor = true;
+            logger.debug("Opening Code View");
+            p.clickCodeViewTab();
+            boolean codeViewDisplayed = p.isCodeViewDisplayed();
+            String source = p.getCodeViewSource();
+            logger.info("Code View displayed={}, source length={}", codeViewDisplayed, source.length());
+            logger.debug("Asserting Code View is active with document source");
+            Assert.assertTrue(codeViewDisplayed, "Code View must be visible and the VE iframe hidden");
+            String sourceText = p.getDocumentTextSnapshot(source, true);
+            boolean sourceMatches = originalText.equals(sourceText);
+            logger.info("Source XML contains the original document text in order: {}", sourceMatches);
+            Assert.assertTrue(sourceMatches, "Source XML must contain all original document text in order");
+            logger.debug("Code View source assertions passed; returning to Visual Editor");
+            p.clickVisualEditorTab();
+            boolean returnedVisualEditor = p.isVisualEditorDisplayed();
+            logger.info("Visual Editor displayed after return: {}", returnedVisualEditor);
+            logger.debug("Asserting Visual Editor is active again");
+            Assert.assertTrue(returnedVisualEditor, "Visual Editor must be visible and Code View hidden after return");
+            restoreVisualEditor = false;
+            logger.debug("Returned view assertion passed");
+            logger.debug(SWITCHING_TO_EDITOR_FRAME_MSG);
+            getDriver().switchTo().frame(p.getEditorFrame());
+            logger.debug(LOG_SWITCHED_TO_EDITOR_FRAME);
+            String returnedMarkup = p.getVisualDocumentMarkup();
+            boolean contentUnchanged = originalMarkup.equals(returnedMarkup);
+            logger.info("Document markup unchanged={}, original length={}, returned length={}",
+                    contentUnchanged, originalMarkup.length(), returnedMarkup.length());
+            logger.debug("Asserting complete document markup is unchanged after switching views");
+            Assert.assertTrue(contentUnchanged,
+                    "Switching VE to Code View and back must preserve the complete document markup exactly");
+            logger.debug("Document content preservation assertion passed");
+        } catch (RuntimeException | AssertionError failure) {
+            scenarioFailure = failure;
+            throw failure;
+        } finally {
+            try {
+                logger.debug(SWITCHING_TO_DEFAULT_CONTENT_MSG);
+                getDriver().switchTo().defaultContent();
+                logger.debug(LOG_SWITCH_DEFAULT_CONTENT);
+                if (restoreVisualEditor) {
+                    logger.debug("Restoring Visual Editor after an incomplete view transition");
+                    p.clickVisualEditorTab();
+                    p.isVisualEditorDisplayed();
+                    logger.debug("Visual Editor restored");
+                }
+                logger.debug("View-only cleanup completed; no document edit requires Undo");
+            } catch (RuntimeException | AssertionError cleanupFailure) {
+                if (scenarioFailure == null) {
+                    throw cleanupFailure;
+                }
+                scenarioFailure.addSuppressed(cleanupFailure);
+            }
+        }
+        logger.info(FINISHED_TEST_MSG, "verifySwitchingBetweenVisualEditorAndCodeViewPreservesContent");
+    }
+
     @Test(enabled = true, groups = { "DocumentEditor", "P2-DocumentEditor" }, description = "TC_01 | Verify the document title is visible")
     public void verifyDocumentTitleIsDisplayed() {
         logger.info(STARTING_TEST_MSG, "verifyDocumentTitleIsDisplayed");

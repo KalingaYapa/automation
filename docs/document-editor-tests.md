@@ -1,6 +1,6 @@
 # Document editor tests
 
-The 36 editor-related cases are split between `documenteditor.DocumentEditor1TestCase` (21) and `para.Para1TestCase` (15). Their actions and checks live in the matching `DocumentEditorPageObjects1` and `ParaPageObjects1` Page Objects. All editor cases are enabled; detailed IDs, objectives and expected results are in [the catalog](test-case-catalog.md).
+The 37 editor-related cases are split between `documenteditor.DocumentEditor1TestCase` (22) and `para.Para1TestCase` (15). Their actions and checks live in the matching `DocumentEditorPageObjects1` and `ParaPageObjects1` Page Objects. All editor cases are enabled; detailed IDs, objectives and expected results are in [the catalog](test-case-catalog.md).
 
 ## Scope
 
@@ -17,6 +17,8 @@ The 36 editor-related cases are split between `documenteditor.DocumentEditor1Tes
 - TC_40 (manual TC-016): Save a paragraph edit, reload and verify persistence; save the original paragraph back and reload to verify restoration.
 
 - TC_41 (manual TC-018): click a Document Structure paragraph and verify its exact VE selection/highlight and the right-panel p label.
+
+- TC_42 (manual TC-017): switch VE → Code View → VE, verify source XML text and exact preservation of the complete VE markup.
 
 ## Setup and lifecycle
 
@@ -41,7 +43,7 @@ mvn clean test -DsuiteXmlFile=ClipboardTests.xml
 mvn clean test -DsuiteXmlFile=SaveTests.xml
 ```
 
-`DocumentEditor.xml` runs all 36 editor cases. The other suites select TC_13–TC_15, TC_17–TC_18 plus TC_41, and TC_25–TC_29 respectively; ClipboardTests.xml selects TC_39 and SaveTests.xml selects TC_40. `mvn clean test` defaults to `testng.xml` and runs all 41 application cases, including the five portal cases. `Master.xml` is an equivalent compatibility suite.
+`DocumentEditor.xml` runs all 37 editor cases. The other suites select TC_13–TC_15, TC_17–TC_18 plus TC_41, and TC_25–TC_29 respectively; ClipboardTests.xml selects TC_39 and SaveTests.xml selects TC_40. `mvn clean test` defaults to `testng.xml` and runs all 42 application cases, including the five portal cases. `Master.xml` is an equivalent compatibility suite.
 
 Editor-level groups are `DocumentEditor` plus `P2-DocumentEditor` for High or `P3-DocumentEditor` for Medium; paragraph groups are `Para` and `P2-Para`. All suites use the standard `RetryMultipleFailedTestcases` test block and updated class references. Retry remains attached by the framework listener, with retry limit zero by default.
 

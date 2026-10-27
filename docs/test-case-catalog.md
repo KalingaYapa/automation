@@ -1,14 +1,14 @@
 # Automation test case catalog
 
-All 41 application cases are enabled. IDs and automation method names are unchanged. Each method explicitly logs its navigation, page construction, frame transitions, actions, assertions and cleanup, following [the supplied team format](sample-format-alignment.md).
+All 42 application cases are enabled. IDs and automation method names are unchanged. Each method explicitly logs its navigation, page construction, frame transitions, actions, assertions and cleanup, following [the supplied team format](sample-format-alignment.md).
 
 ## Maintenance
 
-Update this catalog in the same change whenever a test is added or changed. Record ID, name, automation method, objective and expected result. Check global ID/method uniqueness; the next unused application ID is TC_42 (TC_39 maps to manual TC-015, TC_40 to manual TC-016 and TC_41 to manual TC-018; existing TC_15/TC_16 remain unchanged). Expected results describe assertions, not a claim that every historical run passed.
+Update this catalog in the same change whenever a test is added or changed. Record ID, name, automation method, objective and expected result. Check global ID/method uniqueness; the next unused application ID is TC_43 (TC_39 maps to manual TC-015, TC_40 to manual TC-016 TC_41 to manual TC-018 and TC_42 to manual TC-017; existing TC_15/TC_16 remain unchanged). Expected results describe assertions, not a claim that every historical run passed.
 
 ## Document editor — DocumentEditor1TestCase
 
-21 editor-level cases use DocumentEditor/P2-DocumentEditor (High) or P3-DocumentEditor (Medium). Title-bar cases inspect labels/availability without clicking Save, Reset File, Validate File or Check In. Formatting cases restore their own changes with Undo.
+22 editor-level cases use DocumentEditor/P2-DocumentEditor (High) or P3-DocumentEditor (Medium). Title-bar cases inspect labels/availability without clicking Save, Reset File, Validate File or Check In. Formatting cases restore their own changes with Undo.
 
 | ID | Test case name | Automation method | Objective | Expected result |
 | --- | --- | --- | --- | --- |
@@ -33,6 +33,7 @@ Update this catalog in the same change whenever a test is added or changed. Reco
 | TC_25 | Verify applying Italic to a selected heading word | `verifyApplyingItalicToHeadingWord` | Select the configured heading word, initially without italic formatting, and click Italic. | Italic becomes active and the selected word has italic markup with rendered italic font style. Undo removes the applied formatting. |
 | TC_26 | Verify applying Underline to a selected heading word | `verifyApplyingUnderlineToHeadingWord` | Select the configured heading word, initially without underline formatting, and click Underline. | Underline becomes active and the selected word has underline markup with rendered underline decoration. Undo removes the applied formatting. |
 | TC_27 | Verify Redo restores undone Bold formatting | `verifyRedoRestoresBoldFormatting` | Apply Bold to the configured heading word, undo it, then click Redo. | Undo removes explicit Bold formatting. Redo restores bold markup, rendered bold weight and the active Bold button. Final Undo removes the change. |
+| TC_42 | Verify switching between Visual Editor and Code View (manual TC-017) | `verifySwitchingBetweenVisualEditorAndCodeViewPreservesContent` | Capture the document in VE, open Code View and inspect its full source buffer, then return to VE. | Code View is active with well-formed XML containing all original text in order (ignoring XML indentation/whitespace and editor markers). Returning activates VE and hides Code View; the complete VE body markup is exactly unchanged. Cleanup restores default content and VE without editing or saving. |
 
 ## Portal navigation — Portal1TestCase
 

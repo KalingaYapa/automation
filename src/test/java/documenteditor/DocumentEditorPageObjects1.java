@@ -55,6 +55,72 @@ public class DocumentEditorPageObjects1 extends BasePage {
     @FindBy(xpath = "//*[@id='btn-checkin-file']")
     private WebElement checkInButton;
 
+    @FindBy(xpath = "//*[@id='code-view-tab']")
+    private WebElement codeViewTab;
+    @FindBy(xpath = "//*[@id='visual-editor-tab']")
+    private WebElement visualEditorTab;
+    @FindBy(xpath = "//*[@id='tab-li-xml']")
+    private WebElement codeViewTabItem;
+    @FindBy(xpath = "//*[@id='tab-li-html']")
+    private WebElement visualEditorTabItem;
+    @FindBy(xpath = "//*[@id='tab-xml-editor']//div[contains(concat(' ',normalize-space(@class),' '),' CodeMirror ')]")
+    private WebElement codeMirrorEditor;
+    @FindBy(xpath = "//body")
+    private WebElement visualEditorBody;
+
+    public void clickCodeViewTab() {
+        logger.debug("Clicking Code View tab");
+        elementClick(codeViewTab);
+        logger.debug("Clicked Code View tab");
+    }
+
+    public void clickVisualEditorTab() {
+        logger.debug("Clicking Visual Editor tab");
+        elementClick(visualEditorTab);
+        logger.debug("Clicked Visual Editor tab");
+    }
+
+    public boolean isCodeViewDisplayed() {
+        return mywait.until(driver -> List.of(codeViewTabItem.getAttribute(CLASS_ATTRIBUTE).split(WHITESPACE_PATTERN))
+                .contains("active") && codeMirrorEditor.isDisplayed()
+                && editorFrames.stream().noneMatch(WebElement::isDisplayed));
+    }
+
+    public boolean isVisualEditorDisplayed() {
+        return mywait.until(driver -> List.of(visualEditorTabItem.getAttribute(CLASS_ATTRIBUTE).split(WHITESPACE_PATTERN))
+                .contains("active") && editorFrames.stream().anyMatch(WebElement::isDisplayed)
+                && !codeMirrorEditor.isDisplayed());
+    }
+
+    /** Reads the complete CodeMirror buffer, including lines outside its rendered viewport. */
+    public String getCodeViewSource() {
+        waitForElementToBeVisible(codeMirrorEditor);
+        return mywait.until(driver -> {
+            String source = (String) js.executeScript(
+                    "return arguments[0].CodeMirror.getValue();", codeMirrorEditor);
+            return source.isBlank() ? null : source;
+        });
+    }
+
+    /** Call only from inside the Visual Editor iframe. */
+    public String getVisualDocumentMarkup() {
+        waitForElementToBeVisible(visualEditorBody);
+        return visualEditorBody.getAttribute("innerHTML");
+    }
+
+    /** Compare document text across HTML/XML serialization without indentation or editor markers. */
+    public String getDocumentTextSnapshot(String markup, boolean sourceXml) {
+        return (String) js.executeScript("""
+                const xml = arguments[1];
+                const parsed = new DOMParser().parseFromString(arguments[0], xml ? 'application/xml' : 'text/html');
+                if (xml && parsed.querySelector('parsererror')) {
+                    throw new Error('Code View must display well-formed document XML');
+                }
+                const root = xml ? parsed.documentElement : parsed.body;
+                return root.textContent.replace(/[\\s\\u200B\\u2063\\uFEFF]/g, '');
+                """, markup, sourceXml);
+    }
+
     public DocumentEditorPageObjects1(WebDriver driver) {
         super(driver);
     }
