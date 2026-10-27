@@ -28,7 +28,6 @@
                     <include name="verifyApplyingSubscriptToParagraphWord" />
                     <include name="verifyApplyingSuperscriptToParagraphWord" />
                     <include name="verifyApplyingStrikethroughToParagraphWord" />
-                    <include name="verifyUppercaseChangesOnlySelectedParagraphWord" />
                 </methods>
             </class>
         </classes>

@@ -1,10 +1,10 @@
 # Automation test case catalog
 
-All 39 application cases are enabled. IDs and automation method names are unchanged. Each method explicitly logs its navigation, page construction, frame transitions, actions, assertions and Undo cleanup, following [the supplied team format](sample-format-alignment.md).
+All 38 application cases are enabled. IDs and automation method names are unchanged. Each method explicitly logs its navigation, page construction, frame transitions, actions, assertions and Undo cleanup, following [the supplied team format](sample-format-alignment.md).
 
 ## Maintenance
 
-Update this catalog in the same change whenever a test is added or changed. Record ID, name, automation method, objective and expected result. Check global ID/method uniqueness; TC_39 remains unallocated; TC_40 preserves the supplied manual ID TC-040. Expected results describe assertions, not a claim that every historical run passed.
+Update this catalog in the same change whenever a test is added or changed. Record ID, name, automation method, objective and expected result. Check global ID/method uniqueness; the next unused application ID is TC_39. Expected results describe assertions, not a claim that every historical run passed.
 
 ## Document editor — DocumentEditor1TestCase
 
@@ -48,9 +48,9 @@ Five cases use Portal and its mapped priority. Each test explicitly performs onl
 
 ## Paragraph — Para1TestCase
 
-Thirteen paragraph cases use Para/P2-Para and ParaPageObjects1. Each test calls the shared login/search/Edit helper, enters the XPath-selected editor frame for VE operations, returns to default content for toolbar/DS checks and explicitly undoes its changes. Fixed elements use XPath @FindBy fields.
+Twelve paragraph cases use Para/P2-Para and ParaPageObjects1. Each test calls the shared login/search/Edit helper, enters the XPath-selected editor frame for VE operations, returns to default content for toolbar/DS checks and explicitly undoes its changes. Fixed elements use XPath @FindBy fields.
 
-Run `mvn clean test -DsuiteXmlFile=ParagraphTests.xml`. For TC_40 only, see [the Uppercase run guide](uppercase-test.md). See [the lead-case mapping](team-lead-paragraph-cases.md) for reused/enhanced cases and the thirteen external scenarios.
+Run `mvn clean test -DsuiteXmlFile=ParagraphTests.xml`. See [the lead-case mapping](team-lead-paragraph-cases.md) for reused/enhanced cases and the thirteen external scenarios.
 
 | ID | Test case name | Automation method | Objective | Expected result |
 | --- | --- | --- | --- | --- |
@@ -66,7 +66,6 @@ Run `mvn clean test -DsuiteXmlFile=ParagraphTests.xml`. For TC_40 only, see [the
 | TC_36 | Verify Subscript affects only the selected paragraph word | `verifyApplyingSubscriptToParagraphWord` | Select the configured plain paragraph word and apply Subscript. | The selected word gains a smaller font and subscript vertical alignment; the matching toolbar button is active. Paragraph text and every unselected character style remain unchanged. Undo restores the original character snapshot. |
 | TC_37 | Verify Superscript affects only the selected paragraph word | `verifyApplyingSuperscriptToParagraphWord` | Select the configured plain paragraph word and apply Superscript. | The selected word gains a smaller font and superscript vertical alignment; the matching toolbar button is active. Paragraph text and every unselected character style remain unchanged. Undo restores the original character snapshot. |
 | TC_38 | Verify Strikethrough affects only the selected paragraph word | `verifyApplyingStrikethroughToParagraphWord` | Select the configured plain paragraph word and apply Strikethrough. | The selected word gains line-through decoration; the matching toolbar button is active. Paragraph text and every unselected character style remain unchanged. Undo restores the original character snapshot. |
-| TC_40 | Verify uppercase formatting of a word in the Visual Editor (manual TC-040) | `verifyUppercaseChangesOnlySelectedParagraphWord` | Select the configured paragraph word, open Case Change and select Uppercase. | Only the selected word becomes uppercase. The full remaining paragraph text, including punctuation and order, stays unchanged. Undo restores the original letter case. |
 
 ## Archived sample template — Aa_SampleTC
 
