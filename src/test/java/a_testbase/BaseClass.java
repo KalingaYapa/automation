@@ -9,6 +9,7 @@ import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.chromium.HasPermissions;
 import org.openqa.selenium.edge.EdgeDriver;
 import org.openqa.selenium.edge.EdgeOptions;
 import org.openqa.selenium.firefox.FirefoxDriver;
@@ -142,6 +143,12 @@ public class BaseClass {
 			getDriver().manage().window().maximize();
 		}
 		getDriver().get(getAppUrl());
+        if (Boolean.parseBoolean(getConfig("allowClipboard"))
+                && driver instanceof HasPermissions permissions) {
+            permissions.setPermission("clipboard-read", "granted");
+            permissions.setPermission("clipboard-write", "granted");
+            BASE_LOGGER.info("Clipboard permission granted for the application in the temporary test browser");
+        }
 
 		BASE_LOGGER.info("[{}] {} opened {}", Thread.currentThread().getName(), targetBrowser, getAppUrl());
 	}

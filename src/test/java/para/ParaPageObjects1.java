@@ -16,6 +16,7 @@ import documenteditor.DocumentEditorPageObjects1.ParagraphFormat;
 /** XPath elements and context-local paragraph actions/checks. The test owns frame changes. */
 public class ParaPageObjects1 extends BasePage {
     private static final Logger logger = LogManager.getLogger(ParaPageObjects1.class);
+    private static final String PARAGRAPH_REFERENCE_ATTRIBUTE = "inno_ref";
     @FindBy(xpath = "//iframe[contains(concat(' ',normalize-space(@class),' '),' cke_wysiwyg_frame ')]")
     private List<WebElement> editorFrames;
     @FindBy(xpath = "//div[@data-element='p']")
@@ -40,6 +41,14 @@ public class ParaPageObjects1 extends BasePage {
     private WebElement undoButton;
     @FindBy(xpath = "//a[contains(concat(' ',normalize-space(@class),' '),' cke_button__redo ')]")
     private WebElement redoButton;
+
+    @FindBy(xpath = "//a[contains(concat(' ',normalize-space(@class),' '),' cke_button__copy ')]")
+    private WebElement copyButton;
+    @FindBy(xpath = "//a[contains(concat(' ',normalize-space(@class),' '),' cke_button__paste ') and starts-with(@title,'Paste (')]")
+    private WebElement pasteButton;
+
+    private String copySourceReference;
+    private String pasteDestinationReference;
 
     // Reuse the existing technical selection, section and computed-style readers.
     private final DocumentEditorPageObjects1 editor;
@@ -71,6 +80,87 @@ public class ParaPageObjects1 extends BasePage {
             }
             return target;
         });
+    }
+
+    private String getClipboardParagraphText(WebElement paragraph) {
+        return paragraph.getText().replaceAll("[\\u200B\\u2063\\uFEFF]", "")
+                .replaceAll("[\\s\\p{Z}]+", " ").trim();
+    }
+
+    private WebElement getParagraphByAnchor(String anchor) {
+        if (anchor.isBlank()) {
+            throw new IllegalStateException("Clipboard paragraph anchor must not be blank");
+        }
+        return mywait.until(driver -> {
+            List<WebElement> matches = paragraphsInVe.stream().filter(WebElement::isDisplayed)
+                    .filter(paragraph -> getClipboardParagraphText(paragraph).contains(anchor)).toList();
+            if (matches.size() > 1) {
+                throw new IllegalStateException("Clipboard paragraph anchor must identify exactly one paragraph");
+            }
+            return matches.isEmpty() ? null : matches.get(0);
+        });
+    }
+
+    public void rememberClipboardParagraphs() {
+        copySourceReference = getParagraphByAnchor(BaseClass.getConfig("clipboardSourceParagraphAnchor"))
+                .getAttribute(PARAGRAPH_REFERENCE_ATTRIBUTE);
+        pasteDestinationReference = getParagraphByAnchor(BaseClass.getConfig("clipboardDestinationParagraphAnchor"))
+                .getAttribute(PARAGRAPH_REFERENCE_ATTRIBUTE);
+        if (copySourceReference == null || pasteDestinationReference == null
+                || copySourceReference.equals(pasteDestinationReference)) {
+            throw new IllegalStateException("Copy and Paste require two distinct referenced paragraphs");
+        }
+    }
+
+    private WebElement getParagraphByReference(String reference) {
+        return mywait.until(driver -> paragraphsInVe.stream().filter(WebElement::isDisplayed)
+                .filter(paragraph -> reference.equals(paragraph.getAttribute(PARAGRAPH_REFERENCE_ATTRIBUTE)))
+                .findFirst().orElse(null));
+    }
+
+    public String getCopySourceTextInVe() {
+        return getClipboardParagraphText(getParagraphByReference(copySourceReference));
+    }
+
+    public String getPasteDestinationTextInVe() {
+        return getClipboardParagraphText(getParagraphByReference(pasteDestinationReference));
+    }
+
+    public void selectCopySourceWord() {
+        editor.selectParagraphWord(getParagraphByReference(copySourceReference));
+    }
+
+    public void placeCursorAtPasteDestinationStart() {
+        WebElement destination = getParagraphByReference(pasteDestinationReference);
+        elementClick(destination);
+        js.executeScript("""
+                const root = arguments[0], library = parent.CKEDITOR;
+                const editor = Object.values(library.instances)
+                    .find(instance => instance.status === 'ready' && instance.document?.$ === document);
+                if (!editor) throw new Error('The destination editor is not ready');
+                editor.focus();
+                const range = editor.createRange();
+                range.selectNodeContents(new library.dom.element(root));
+                range.collapse(true);
+                editor.getSelection().selectRanges([range]);
+                editor.forceNextSelectionCheck();
+                editor.selectionChange(true);
+                const selection = window.getSelection();
+                if (!selection.isCollapsed || !(selection.anchorNode === root || root.contains(selection.anchorNode)))
+                    throw new Error('Paste cursor is not inside the destination paragraph');
+                """, destination);
+    }
+
+    public void clickCopy() {
+        clickEnabledButton(copyButton);
+    }
+
+    public void clickPaste() {
+        clickEnabledButton(pasteButton);
+    }
+
+    public void waitForPasteDestinationTextInVe(String expected) {
+        mywait.until(driver -> expected.equals(getPasteDestinationTextInVe()));
     }
 
     public void rememberTargetSection() {

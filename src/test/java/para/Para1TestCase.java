@@ -927,4 +927,112 @@ public class Para1TestCase extends BaseClass {
         logger.info(FINISHED_TEST_MSG, "verifyApplyingStrikethroughToParagraphWord");
     }
 
+    @Test(enabled = true, groups = { "Para", "P2-Para" },
+            description = "TC_39 | Verify toolbar Copy and Paste between paragraphs (manual TC-015)")
+    public void verifyCopyAndPasteBetweenParagraphs() {
+        logger.info(STARTING_TEST_MSG, "verifyCopyAndPasteBetweenParagraphs");
+        logger.debug(CALLING_LOGIN_AND_SEARCH_FILE_EDIT_MSG);
+        ReusableMethods.loginAndSearchFileClickEdit();
+        logger.debug(LOG_LOGIN_AND_SEARCH_FILE);
+        logger.debug(INITIALISING_PARAPAGEOBJECTS1_PAGE_OBJECT_MSG);
+        ParaPageObjects1 p = new ParaPageObjects1(getDriver());
+        logger.debug(PAGE_OBJECT_INITIALISED_MSG);
+        logger.debug(SWITCHING_TO_EDITOR_FRAME_MSG);
+        getDriver().switchTo().frame(p.getEditorFrame());
+        logger.debug(LOG_SWITCHED_TO_EDITOR_FRAME);
+        logger.debug("Locating two paragraphs and capturing their original text");
+        p.rememberClipboardParagraphs();
+        String originalSource = p.getCopySourceTextInVe();
+        String originalDestination = p.getPasteDestinationTextInVe();
+        String copiedWord = getConfig("paragraphFormatWord");
+        logger.debug("Original source and destination text captured");
+        logger.debug("Selecting the source word for toolbar Copy");
+        p.selectCopySourceWord();
+        logger.debug("Source word selected");
+        logger.debug(SWITCHING_TO_DEFAULT_CONTENT_MSG);
+        getDriver().switchTo().defaultContent();
+        logger.debug(LOG_SWITCH_DEFAULT_CONTENT);
+        logger.debug("Clicking Copy in the editor toolbar");
+        p.clickCopy();
+        logger.debug("Toolbar Copy clicked");
+        logger.debug(SWITCHING_TO_EDITOR_FRAME_MSG);
+        getDriver().switchTo().frame(p.getEditorFrame());
+        logger.debug(LOG_SWITCHED_TO_EDITOR_FRAME);
+        logger.debug("Placing the cursor at the beginning of the destination paragraph");
+        p.placeCursorAtPasteDestinationStart();
+        logger.debug("Destination cursor positioned");
+        logger.debug(SWITCHING_TO_DEFAULT_CONTENT_MSG);
+        getDriver().switchTo().defaultContent();
+        logger.debug(LOG_SWITCH_DEFAULT_CONTENT);
+        boolean pasteClicked = false;
+        Throwable scenarioFailure = null;
+        try {
+            logger.debug("Clicking Paste in the editor toolbar");
+            p.clickPaste();
+            pasteClicked = true;
+            logger.debug("Toolbar Paste clicked");
+            logger.debug(SWITCHING_TO_EDITOR_FRAME_MSG);
+            getDriver().switchTo().frame(p.getEditorFrame());
+            logger.debug(LOG_SWITCHED_TO_EDITOR_FRAME);
+            logger.debug("Waiting for the copied text at the destination cursor");
+            String expectedDestination = copiedWord + originalDestination;
+            p.waitForPasteDestinationTextInVe(expectedDestination);
+            String actualDestination = p.getPasteDestinationTextInVe();
+            String actualSource = p.getCopySourceTextInVe();
+            logger.info("Copied text appears at the destination: {}", expectedDestination.equals(actualDestination));
+            logger.info("Source paragraph remains unchanged after Copy and Paste: {}", originalSource.equals(actualSource));
+            logger.debug("Asserting exact destination text and unchanged source text");
+            Assert.assertEquals(actualDestination, expectedDestination,
+                    "The copied word must appear at the destination cursor without replacing existing text");
+            Assert.assertEquals(actualSource, originalSource, "Copy and Paste must leave the source paragraph unchanged");
+            logger.debug("Copy and Paste text assertions completed");
+        } catch (RuntimeException | AssertionError failure) {
+            scenarioFailure = failure;
+            throw failure;
+        } finally {
+            try {
+                logger.debug(SWITCHING_TO_DEFAULT_CONTENT_MSG);
+                getDriver().switchTo().defaultContent();
+                logger.debug(LOG_SWITCH_DEFAULT_CONTENT);
+                if (pasteClicked) {
+                    logger.debug(SWITCHING_TO_EDITOR_FRAME_MSG);
+                    getDriver().switchTo().frame(p.getEditorFrame());
+                    logger.debug(LOG_SWITCHED_TO_EDITOR_FRAME);
+                    logger.debug("Checking whether Paste changed the destination before cleanup");
+                    boolean changed = !originalDestination.equals(p.getPasteDestinationTextInVe());
+                    logger.debug(SWITCHING_TO_DEFAULT_CONTENT_MSG);
+                    getDriver().switchTo().defaultContent();
+                    logger.debug(LOG_SWITCH_DEFAULT_CONTENT);
+                    if (changed) {
+                        logger.debug("Clicking Undo to remove only the pasted text");
+                        p.clickUndo();
+                        logger.debug(CLEANUP_UNDO_CLICKED_MSG);
+                    }
+                    logger.debug(SWITCHING_TO_EDITOR_FRAME_MSG);
+                    getDriver().switchTo().frame(p.getEditorFrame());
+                    logger.debug(LOG_SWITCHED_TO_EDITOR_FRAME);
+                    logger.debug("Waiting for the original destination after Paste cleanup");
+                    p.waitForPasteDestinationTextInVe(originalDestination);
+                    String restoredDestination = p.getPasteDestinationTextInVe();
+                    String restoredSource = p.getCopySourceTextInVe();
+                    logger.info("Original destination restored: {}", originalDestination.equals(restoredDestination));
+                    logger.info("Original source preserved after cleanup: {}", originalSource.equals(restoredSource));
+                    logger.debug("Asserting both paragraphs match their original text after cleanup");
+                    Assert.assertEquals(restoredDestination, originalDestination, "Undo must restore the destination paragraph");
+                    Assert.assertEquals(restoredSource, originalSource, "Cleanup must preserve the source paragraph");
+                    logger.debug("Copy and Paste cleanup assertions completed");
+                    logger.debug(SWITCHING_TO_DEFAULT_CONTENT_MSG);
+                    getDriver().switchTo().defaultContent();
+                    logger.debug(LOG_SWITCH_DEFAULT_CONTENT);
+                }
+            } catch (RuntimeException | AssertionError cleanupFailure) {
+                if (scenarioFailure == null) {
+                    throw cleanupFailure;
+                }
+                scenarioFailure.addSuppressed(cleanupFailure);
+            }
+        }
+        logger.info(FINISHED_TEST_MSG, "verifyCopyAndPasteBetweenParagraphs");
+    }
+
 }
