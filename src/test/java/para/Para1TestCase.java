@@ -1,6 +1,7 @@
 package para;
 
 import java.util.List;
+import java.util.UUID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.testng.Assert;
@@ -52,6 +53,7 @@ public class Para1TestCase extends BaseClass {
     private static final String PARAGRAPH_FORMATTING_UNDO_CLICKED_MSG = "Paragraph formatting Undo clicked";
     private static final String WAITING_FOR_THE_ORIGINAL_PARAGRAPH_CHARACTER_STYLES_MSG = "Waiting for the original paragraph character styles";
     private static final String ORIGINAL_PARAGRAPH_TEXT_AND_STYLES_RESTORED_MSG = "Original paragraph text and styles restored";
+    private static final String SAVE_SUCCESS_HEADING = "Saved";
     private static final String STARTING_TEST_MSG = "Starting test: {}";
     private static final String FINISHED_TEST_MSG = "Finished test: {} - PASSED";
 
@@ -1033,6 +1035,118 @@ public class Para1TestCase extends BaseClass {
             }
         }
         logger.info(FINISHED_TEST_MSG, "verifyCopyAndPasteBetweenParagraphs");
+    }
+
+    @Test(enabled = true, groups = { "Para", "P2-Para" },
+            description = "TC_40 | Verify paragraph changes persist after Save and reload (manual TC-016)")
+    public void verifySavedParagraphChangesPersistAfterReload() {
+        logger.info(STARTING_TEST_MSG, "verifySavedParagraphChangesPersistAfterReload");
+        logger.debug(CALLING_LOGIN_AND_SEARCH_FILE_EDIT_MSG);
+        ReusableMethods.loginAndSearchFileClickEdit();
+        logger.debug(LOG_LOGIN_AND_SEARCH_FILE);
+        logger.debug(INITIALISING_PARAPAGEOBJECTS1_PAGE_OBJECT_MSG);
+        ParaPageObjects1 p = new ParaPageObjects1(getDriver());
+        logger.debug(PAGE_OBJECT_INITIALISED_MSG);
+        logger.debug(SWITCHING_TO_EDITOR_FRAME_MSG);
+        getDriver().switchTo().frame(p.getEditorFrame());
+        logger.debug(LOG_SWITCHED_TO_EDITOR_FRAME);
+        logger.debug("Locating the Save paragraph and capturing its original text and markup");
+        p.rememberSaveParagraph();
+        String originalText = p.getSaveParagraphTextInVe();
+        String originalHtml = p.getSaveParagraphHtmlInVe();
+        String marker = "[savecheck-" + UUID.randomUUID() + "]";
+        String expectedText = originalText + marker;
+        logger.debug("Original Save paragraph captured");
+        boolean editAttempted = false;
+        Throwable scenarioFailure = null;
+        try {
+            logger.debug("Placing the cursor at the paragraph end");
+            p.placeCursorAtSaveParagraphEnd();
+            logger.debug("Save paragraph cursor positioned");
+            logger.debug("Typing the unique Save verification marker");
+            editAttempted = true;
+            p.typeSaveMarker(marker);
+            p.waitForSaveParagraphTextInVe(expectedText);
+            logger.debug("Paragraph modification is present before Save");
+            logger.debug(SWITCHING_TO_DEFAULT_CONTENT_MSG);
+            getDriver().switchTo().defaultContent();
+            logger.debug(LOG_SWITCH_DEFAULT_CONTENT);
+            logger.debug("Clicking Save and waiting for the successful save notification");
+            p.clickSave();
+            String saveMessage = p.waitForSaveSuccess();
+            logger.info("Save success notification received: {}", saveMessage.equals(SAVE_SUCCESS_HEADING));
+            logger.debug("Asserting the editor reported a successful Save");
+            Assert.assertTrue(saveMessage.equals(SAVE_SUCCESS_HEADING), "Save must report success before reloading");
+            logger.debug("Save success assertion completed");
+            logger.debug("Reloading the editor after Save");
+            getDriver().navigate().refresh();
+            p.waitForEditorReady();
+            logger.debug("Editor reloaded and ready");
+            logger.debug(SWITCHING_TO_EDITOR_FRAME_MSG);
+            getDriver().switchTo().frame(p.getEditorFrame());
+            logger.debug(LOG_SWITCHED_TO_EDITOR_FRAME);
+            logger.debug("Reading the saved paragraph after reload");
+            p.waitForSaveParagraphTextInVe(expectedText);
+            String persistedText = p.getSaveParagraphTextInVe();
+            logger.info("Modified paragraph persisted after reload: {}", expectedText.equals(persistedText));
+            logger.debug("Asserting the complete modified paragraph persisted");
+            Assert.assertEquals(persistedText, expectedText, "The saved paragraph must retain its modification after reload");
+            logger.debug("Saved paragraph persistence assertion completed");
+        } catch (RuntimeException | AssertionError failure) {
+            scenarioFailure = failure;
+            throw failure;
+        } finally {
+            try {
+                logger.debug(SWITCHING_TO_DEFAULT_CONTENT_MSG);
+                getDriver().switchTo().defaultContent();
+                logger.debug(LOG_SWITCH_DEFAULT_CONTENT);
+                if (editAttempted) {
+                    logger.debug(SWITCHING_TO_EDITOR_FRAME_MSG);
+                    getDriver().switchTo().frame(p.getEditorFrame());
+                    logger.debug(LOG_SWITCHED_TO_EDITOR_FRAME);
+                    logger.debug("Checking that cleanup will restore only the test-owned paragraph edit");
+                    String currentText = p.getSaveParagraphTextInVe();
+                    Assert.assertTrue(currentText.equals(expectedText) || currentText.equals(originalText),
+                            "Refusing to overwrite an unexpected paragraph change during Save cleanup");
+                    logger.debug("Restoring the original markup of the target paragraph only");
+                    p.restoreSaveParagraphHtmlInVe(originalHtml);
+                    p.waitForSaveParagraphTextInVe(originalText);
+                    logger.debug("Original paragraph restored in the Visual Editor");
+                    logger.debug(SWITCHING_TO_DEFAULT_CONTENT_MSG);
+                    getDriver().switchTo().defaultContent();
+                    logger.debug(LOG_SWITCH_DEFAULT_CONTENT);
+                    logger.debug("Saving the restored original paragraph");
+                    p.clickSave();
+                    String cleanupSaveMessage = p.waitForSaveSuccess();
+                    logger.info("Restoration Save succeeded: {}", cleanupSaveMessage.equals(SAVE_SUCCESS_HEADING));
+                    logger.debug("Asserting the restoration Save succeeded");
+                    Assert.assertEquals(cleanupSaveMessage, SAVE_SUCCESS_HEADING, "Restoration must report a successful Save");
+                    logger.debug("Restoration Save assertion completed");
+                    logger.debug("Reloading to verify the original paragraph is restored on the server");
+                    getDriver().navigate().refresh();
+                    p.waitForEditorReady();
+                    logger.debug("Restored editor reloaded and ready");
+                    logger.debug(SWITCHING_TO_EDITOR_FRAME_MSG);
+                    getDriver().switchTo().frame(p.getEditorFrame());
+                    logger.debug(LOG_SWITCHED_TO_EDITOR_FRAME);
+                    p.waitForSaveParagraphTextInVe(originalText);
+                    String restoredText = p.getSaveParagraphTextInVe();
+                    logger.info("Original paragraph persisted after cleanup reload: {}", originalText.equals(restoredText));
+                    logger.debug("Asserting the original paragraph persisted after cleanup");
+                    Assert.assertEquals(restoredText, originalText, "Cleanup must save and restore the original paragraph");
+                    logger.debug("Save restoration assertion completed");
+                    logger.debug(SWITCHING_TO_DEFAULT_CONTENT_MSG);
+                    getDriver().switchTo().defaultContent();
+                    logger.debug(LOG_SWITCH_DEFAULT_CONTENT);
+                }
+            } catch (RuntimeException | AssertionError cleanupFailure) {
+                if (scenarioFailure == null) {
+                    throw cleanupFailure;
+                }
+                scenarioFailure.addSuppressed(cleanupFailure);
+            }
+        }
+        logger.info(FINISHED_TEST_MSG, "verifySavedParagraphChangesPersistAfterReload");
     }
 
 }

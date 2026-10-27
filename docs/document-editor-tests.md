@@ -1,6 +1,6 @@
 # Document editor tests
 
-The 33 editor-related cases are split between `documenteditor.DocumentEditor1TestCase` (21) and `para.Para1TestCase` (12). Their actions and checks live in the matching `DocumentEditorPageObjects1` and `ParaPageObjects1` Page Objects. All editor cases are enabled; detailed IDs, objectives and expected results are in [the catalog](test-case-catalog.md).
+The 35 editor-related cases are split between `documenteditor.DocumentEditor1TestCase` (21) and `para.Para1TestCase` (14). Their actions and checks live in the matching `DocumentEditorPageObjects1` and `ParaPageObjects1` Page Objects. All editor cases are enabled; detailed IDs, objectives and expected results are in [the catalog](test-case-catalog.md).
 
 ## Scope
 
@@ -13,6 +13,8 @@ The 33 editor-related cases are split between `documenteditor.DocumentEditor1Tes
 - TC_25–TC_26: apply Italic and Underline; check toolbar state and actual rendered formatting/markup, then Undo.
 - TC_27: apply Bold, Undo, Redo and verify Bold is restored; final Undo removes the change.
 - TC_28–TC_29: convert the target paragraph to unordered/ordered list items; verify toolbar and list structure, then Undo.
+- TC_39 (manual TC-015): toolbar Copy/Paste between paragraphs, source preservation and Undo cleanup.
+- TC_40 (manual TC-016): Save a paragraph edit, reload and verify persistence; save the original paragraph back and reload to verify restoration.
 
 ## Setup and lifecycle
 
@@ -24,7 +26,7 @@ Shared navigation waits for CKEditor readiness. Each test explicitly enters and 
 
 Selected Element checks read `#selectedElmName` in the main page; they do not open or modify the dropdown. They click direct plain-text words (`paragraphSelectionWord=flight`, `headingSelectionWord=Flight`) to avoid selecting nested Bold or the adjacent heading number. Bold/Italic/Underline active state requires the command's `cke_button_on` state, not merely an enabled icon. Undo/Redo wait for enabled commands before native clicks.
 
-Editing cases reverse only their own changes with Undo. They never Save, Reset File or Accept Change. A failing precondition should be investigated rather than bypassed.
+Most editing cases reverse only their own changes with Undo. TC_40 explicitly tests Save, then restores and saves only its target paragraph because reload clears Undo history. Cases never Reset File or Accept Change. A failing precondition should be investigated rather than bypassed.
 
 ## Run
 
@@ -33,9 +35,11 @@ mvn clean test -DsuiteXmlFile=DocumentEditor.xml
 mvn clean test -DsuiteXmlFile=BoldTests.xml
 mvn clean test -DsuiteXmlFile=ElementSelectionTests.xml
 mvn clean test -DsuiteXmlFile=FormattingTests.xml
+mvn clean test -DsuiteXmlFile=ClipboardTests.xml
+mvn clean test -DsuiteXmlFile=SaveTests.xml
 ```
 
-`DocumentEditor.xml` runs all 33 editor cases. The other suites select TC_13–TC_15, TC_17–TC_18 and TC_25–TC_29 respectively. `mvn clean test` defaults to `testng.xml` and runs all 38 application cases, including the five portal cases. `Master.xml` is an equivalent compatibility suite.
+`DocumentEditor.xml` runs all 35 editor cases. The other suites select TC_13–TC_15, TC_17–TC_18 and TC_25–TC_29 respectively; ClipboardTests.xml selects TC_39 and SaveTests.xml selects TC_40. `mvn clean test` defaults to `testng.xml` and runs all 40 application cases, including the five portal cases. `Master.xml` is an equivalent compatibility suite.
 
 Editor-level groups are `DocumentEditor` plus `P2-DocumentEditor` for High or `P3-DocumentEditor` for Medium; paragraph groups are `Para` and `P2-Para`. All suites use the standard `RetryMultipleFailedTestcases` test block and updated class references. Retry remains attached by the framework listener, with retry limit zero by default.
 
@@ -52,3 +56,5 @@ formatting scenarios. Existing list cases are reused. Run
 [the mapping and duplicate decisions](team-lead-paragraph-cases.md).
 
 The latest structure follows [the supplied sample](sample-format-alignment.md): XPath `@FindBy` fields, navigation and frame changes visible in every test, and `Para/P2-Para` groups for paragraph cases.
+
+See [Copy/Paste instructions](clipboard-tests.md) and [Save persistence instructions](save-tests.md) for their configuration and cleanup.

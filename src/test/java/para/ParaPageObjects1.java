@@ -47,6 +47,12 @@ public class ParaPageObjects1 extends BasePage {
     @FindBy(xpath = "//a[contains(concat(' ',normalize-space(@class),' '),' cke_button__paste ') and starts-with(@title,'Paste (')]")
     private WebElement pasteButton;
 
+    @FindBy(xpath = "//*[@id='save-file']")
+    private WebElement saveButton;
+    @FindBy(xpath = "//*[contains(concat(' ',normalize-space(@class),' '),' bootstrap-growl ') and contains(concat(' ',normalize-space(@class),' '),' alert-success ')]/strong[normalize-space()='Saved']")
+    private List<WebElement> saveSuccessNotifications;
+    private String saveParagraphReference;
+
     private String copySourceReference;
     private String pasteDestinationReference;
 
@@ -82,7 +88,7 @@ public class ParaPageObjects1 extends BasePage {
         });
     }
 
-    private String getClipboardParagraphText(WebElement paragraph) {
+    private String getParagraphText(WebElement paragraph) {
         return paragraph.getText().replaceAll("[\\u200B\\u2063\\uFEFF]", "")
                 .replaceAll("[\\s\\p{Z}]+", " ").trim();
     }
@@ -93,7 +99,7 @@ public class ParaPageObjects1 extends BasePage {
         }
         return mywait.until(driver -> {
             List<WebElement> matches = paragraphsInVe.stream().filter(WebElement::isDisplayed)
-                    .filter(paragraph -> getClipboardParagraphText(paragraph).contains(anchor)).toList();
+                    .filter(paragraph -> getParagraphText(paragraph).contains(anchor)).toList();
             if (matches.size() > 1) {
                 throw new IllegalStateException("Clipboard paragraph anchor must identify exactly one paragraph");
             }
@@ -119,11 +125,11 @@ public class ParaPageObjects1 extends BasePage {
     }
 
     public String getCopySourceTextInVe() {
-        return getClipboardParagraphText(getParagraphByReference(copySourceReference));
+        return getParagraphText(getParagraphByReference(copySourceReference));
     }
 
     public String getPasteDestinationTextInVe() {
-        return getClipboardParagraphText(getParagraphByReference(pasteDestinationReference));
+        return getParagraphText(getParagraphByReference(pasteDestinationReference));
     }
 
     public void selectCopySourceWord() {
@@ -131,8 +137,11 @@ public class ParaPageObjects1 extends BasePage {
     }
 
     public void placeCursorAtPasteDestinationStart() {
-        WebElement destination = getParagraphByReference(pasteDestinationReference);
-        elementClick(destination);
+        placeCursorAtParagraphBoundary(getParagraphByReference(pasteDestinationReference), true);
+    }
+
+    private void placeCursorAtParagraphBoundary(WebElement paragraph, boolean atStart) {
+        elementClick(paragraph);
         js.executeScript("""
                 const root = arguments[0], library = parent.CKEDITOR;
                 const editor = Object.values(library.instances)
@@ -141,14 +150,14 @@ public class ParaPageObjects1 extends BasePage {
                 editor.focus();
                 const range = editor.createRange();
                 range.selectNodeContents(new library.dom.element(root));
-                range.collapse(true);
+                range.collapse(arguments[1]);
                 editor.getSelection().selectRanges([range]);
                 editor.forceNextSelectionCheck();
                 editor.selectionChange(true);
                 const selection = window.getSelection();
                 if (!selection.isCollapsed || !(selection.anchorNode === root || root.contains(selection.anchorNode)))
-                    throw new Error('Paste cursor is not inside the destination paragraph');
-                """, destination);
+                    throw new Error('Cursor is not inside the target paragraph');
+                """, paragraph, atStart);
     }
 
     public void clickCopy() {
@@ -161,6 +170,67 @@ public class ParaPageObjects1 extends BasePage {
 
     public void waitForPasteDestinationTextInVe(String expected) {
         mywait.until(driver -> expected.equals(getPasteDestinationTextInVe()));
+    }
+
+    public void rememberSaveParagraph() {
+        saveParagraphReference = getParagraphByAnchor(BaseClass.getConfig("saveParagraphAnchor"))
+                .getAttribute(PARAGRAPH_REFERENCE_ATTRIBUTE);
+        if (saveParagraphReference == null || saveParagraphReference.isBlank()) {
+            throw new IllegalStateException("Save paragraph must have a stable reference");
+        }
+    }
+
+    public String getSaveParagraphTextInVe() {
+        return getParagraphText(getParagraphByReference(saveParagraphReference));
+    }
+
+    public String getSaveParagraphHtmlInVe() {
+        return getParagraphByReference(saveParagraphReference).getAttribute("innerHTML");
+    }
+
+    public void placeCursorAtSaveParagraphEnd() {
+        placeCursorAtParagraphBoundary(getParagraphByReference(saveParagraphReference), false);
+    }
+
+    public void typeSaveMarker(String marker) {
+        new Actions(getDriver).sendKeys(marker).perform();
+    }
+
+    public void waitForSaveParagraphTextInVe(String expected) {
+        mywait.until(driver -> expected.equals(getSaveParagraphTextInVe()));
+    }
+
+    /** Restore this paragraph only; the test must first verify it still contains its own edit. */
+    public void restoreSaveParagraphHtmlInVe(String originalHtml) {
+        js.executeScript("""
+                const root = arguments[0], library = parent.CKEDITOR;
+                const editor = Object.values(library.instances)
+                    .find(instance => instance.status === 'ready' && instance.document?.$ === document);
+                if (!editor) throw new Error('The editor is not ready for paragraph restoration');
+                editor.fire('saveSnapshot');
+                new library.dom.element(root).setHtml(arguments[1]);
+                editor.fire('change');
+                editor.fire('saveSnapshot');
+                """, getParagraphByReference(saveParagraphReference), originalHtml);
+    }
+
+    public void clickSave() {
+        elementClick(saveButton);
+    }
+
+    public String waitForSaveSuccess() {
+        return mywait.withMessage("Save must finish with a fresh Saved success notification")
+                .until(driver -> {
+                    boolean complete = Boolean.TRUE.equals(js.executeScript(
+                            "return typeof savingInProgress !== 'undefined' && savingInProgress === false"
+                            + " && HTMLedited_NotSaved === false;"));
+                    return complete ? saveSuccessNotifications.stream().filter(WebElement::isDisplayed)
+                            .map(WebElement::getText).findFirst().orElse(null) : null;
+                });
+    }
+
+    public void waitForEditorReady() {
+        editor.waitForEditorReady();
     }
 
     public void rememberTargetSection() {

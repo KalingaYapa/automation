@@ -1,10 +1,10 @@
 # Automation test case catalog
 
-All 39 application cases are enabled. IDs and automation method names are unchanged. Each method explicitly logs its navigation, page construction, frame transitions, actions, assertions and Undo cleanup, following [the supplied team format](sample-format-alignment.md).
+All 40 application cases are enabled. IDs and automation method names are unchanged. Each method explicitly logs its navigation, page construction, frame transitions, actions, assertions and cleanup, following [the supplied team format](sample-format-alignment.md).
 
 ## Maintenance
 
-Update this catalog in the same change whenever a test is added or changed. Record ID, name, automation method, objective and expected result. Check global ID/method uniqueness; the next unused application ID is TC_40 (TC_39 maps to manual TC-015; existing TC_15 remains the Bold case). Expected results describe assertions, not a claim that every historical run passed.
+Update this catalog in the same change whenever a test is added or changed. Record ID, name, automation method, objective and expected result. Check global ID/method uniqueness; the next unused application ID is TC_41 (TC_39 maps to manual TC-015 and TC_40 to manual TC-016; existing TC_15/TC_16 remain unchanged). Expected results describe assertions, not a claim that every historical run passed.
 
 ## Document editor — DocumentEditor1TestCase
 
@@ -48,9 +48,9 @@ Five cases use Portal and its mapped priority. Each test explicitly performs onl
 
 ## Paragraph — Para1TestCase
 
-Thirteen paragraph cases use Para/P2-Para and ParaPageObjects1. Each test calls the shared login/search/Edit helper, enters the XPath-selected editor frame for VE operations, returns to default content for toolbar/DS checks and explicitly undoes its changes. Fixed elements use XPath @FindBy fields.
+Fourteen paragraph cases use Para/P2-Para and ParaPageObjects1. Each test calls the shared login/search/Edit helper, enters the XPath-selected editor frame for VE operations, returns to default content for toolbar/DS checks and restores its changes. Save persistence additionally saves its restored paragraph and verifies it after reload. Fixed elements use XPath @FindBy fields.
 
-Run `mvn clean test -DsuiteXmlFile=ParagraphTests.xml`. See [Copy/Paste execution instructions](clipboard-tests.md) for TC_39 alone. See [the lead-case mapping](team-lead-paragraph-cases.md) for reused/enhanced cases and the thirteen external scenarios.
+Run `mvn clean test -DsuiteXmlFile=ParagraphTests.xml`. See [Copy/Paste execution instructions](clipboard-tests.md) for TC_39 alone and [Save execution instructions](save-tests.md) for TC_40 alone. See [the lead-case mapping](team-lead-paragraph-cases.md) for reused/enhanced cases and the thirteen external scenarios.
 
 | ID | Test case name | Automation method | Objective | Expected result |
 | --- | --- | --- | --- | --- |
@@ -67,6 +67,7 @@ Run `mvn clean test -DsuiteXmlFile=ParagraphTests.xml`. See [Copy/Paste executio
 | TC_37 | Verify Superscript affects only the selected paragraph word | `verifyApplyingSuperscriptToParagraphWord` | Select the configured plain paragraph word and apply Superscript. | The selected word gains a smaller font and superscript vertical alignment; the matching toolbar button is active. Paragraph text and every unselected character style remain unchanged. Undo restores the original character snapshot. |
 | TC_38 | Verify Strikethrough affects only the selected paragraph word | `verifyApplyingStrikethroughToParagraphWord` | Select the configured plain paragraph word and apply Strikethrough. | The selected word gains line-through decoration; the matching toolbar button is active. Paragraph text and every unselected character style remain unchanged. Undo restores the original character snapshot. |
 | TC_39 | Verify text can be copied and pasted within the editor (manual TC-015) | `verifyCopyAndPasteBetweenParagraphs` | Select a word in one paragraph, click toolbar Copy, position the cursor at the start of another paragraph and click toolbar Paste. | The copied word appears exactly at the cursor; the original destination text and source text stay unchanged. Undo restores the destination and preserves the source. |
+| TC_40 | Verify document changes can be saved successfully (manual TC-016) | `verifySavedParagraphChangesPersistAfterReload` | Modify an existing paragraph with a unique marker, click Save, wait for success and reload. | The complete modified paragraph persists after reload. Cleanup restores only the captured target paragraph, saves it and verifies the original text after another reload. |
 
 ## Archived sample template — Aa_SampleTC
 

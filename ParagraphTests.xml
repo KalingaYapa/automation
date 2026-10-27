@@ -29,6 +29,7 @@
                     <include name="verifyApplyingSuperscriptToParagraphWord" />
                     <include name="verifyApplyingStrikethroughToParagraphWord" />
                     <include name="verifyCopyAndPasteBetweenParagraphs" />
+                    <include name="verifySavedParagraphChangesPersistAfterReload" />
                 </methods>
             </class>
         </classes>

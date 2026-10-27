@@ -18,22 +18,24 @@ src/test/java/
 src/test/resources/config.properties          local configuration
 ```
 
-All 38 application tests are enabled: TC_01–TC_19 and TC_25–TC_38 cover the editor; TC_20–TC_24 cover portal navigation. The five sample-screen examples are preserved under `docs/templates` as noncompiled references.
+All 40 application tests are enabled: TC_01–TC_19 and TC_25–TC_40 cover the editor; TC_20–TC_24 cover portal navigation. The five sample-screen examples are preserved under `docs/templates` as noncompiled references.
 
 ## Run
 
 Install JDK 17 or later, Maven and Chrome. Set the sandbox login URL and test account in your local `src/test/resources/config.properties`. Never commit credentials.
 
 ```bash
-mvn clean test                                      # all 38 application tests
-mvn clean test -DsuiteXmlFile=DocumentEditor.xml      # 33 editor tests
+mvn clean test                                      # all 40 application tests
+mvn clean test -DsuiteXmlFile=DocumentEditor.xml      # 35 editor tests
 mvn clean test -DsuiteXmlFile=PortalNavigation.xml    # 5 portal tests
 mvn clean test -DsuiteXmlFile=FormattingTests.xml     # TC_25–TC_29
-mvn clean test -DsuiteXmlFile=ParagraphTests.xml      # supplied paragraph scope (12 methods)
+mvn clean test -DsuiteXmlFile=ParagraphTests.xml      # paragraph scope (14 methods)
+mvn clean test -DsuiteXmlFile=ClipboardTests.xml      # manual TC-015 (framework TC_39)
+mvn clean test -DsuiteXmlFile=SaveTests.xml           # manual TC-016 (framework TC_40)
 mvn clean test -Dgroups=P2-DocumentEditor             # High-priority editor tests
 ```
 
-The default `testng.xml` runs sequentially to avoid concurrent changes to the same document. `Master.xml` is an equivalent compatibility suite. Every case has a fresh browser and explicitly logs and performs its prerequisites in its test method. Frame changes are explicit in the test; fixed Page Object elements use XPath @FindBy fields. Editing tests undo their changes and do not save the document. Maven fails when tests fail; always check executed counts and skips too.
+The default `testng.xml` runs sequentially to avoid concurrent changes to the same document. `Master.xml` is an equivalent compatibility suite. Every case has a fresh browser and explicitly logs and performs its prerequisites in its test method. Frame changes are explicit in the test; fixed Page Object elements use XPath @FindBy fields. Most editing tests use Undo. The [Save persistence case](docs/save-tests.md) performs a real save and reload, then restores and saves the original paragraph; these saves remain in timestamps/version history. Maven fails when tests fail; always check executed counts and skips too.
 
 Reports: `reports/ExtentReport.html`, `reports/ExcelReport.xlsx`, `target/surefire-reports/`. Logs: `logs/Automation.log`. Failure screenshots: `screenshots/`. Generated files should not be committed.
 
