@@ -97,7 +97,7 @@ To run only P1 cases, keep only the relevant `P1-<Module>` include lines for tha
 
 The repository now uses `a_testbase.BaseClass`, `d_loginpage.BasePage`, and `d_loginpage.HomePage`. Shared login, project selection and file-list navigation live in `HomePage`; each test method explicitly logs and calls `ReusableMethods.loginAndSearchFileClickEdit()` once before creating its page object. Do not hide the journey in a subclass `@BeforeMethod`. BaseClass still owns browser lifecycle setup/teardown.
 
-Editor-level cases are in `documenteditor.DocumentEditor1TestCase` with `DocumentEditorPageObjects1` in the same package. Paragraph cases are in `para.Para1TestCase` and `ParaPageObjects1`, with `Para/P2-Para` groups. Portal journey cases are in `portal.Portal1TestCase` and reuse the shared HomePage instead of adding another login page. Every test has its module group and mapped priority group. All 40 application cases are enabled.
+Editor-level cases are in `documenteditor.DocumentEditor1TestCase` with `DocumentEditorPageObjects1` in the same package. Paragraph cases are in `para.Para1TestCase` and `ParaPageObjects1`, with `Para/P2-Para` groups. Portal journey cases are in `portal.Portal1TestCase` and reuse the shared HomePage instead of adding another login page. Every test has its module group and mapped priority group. All 41 application cases are enabled.
 
 `testng.xml` is the default suite with the `RetryMultipleFailedTestcases` block. `Master.xml` is an equivalent compatibility suite. Focused suites retain their existing command names and use standard class/group references. Sample starter cases are archived under `docs/templates` as noncompiled references.
 
@@ -107,7 +107,7 @@ The sample's broader paragraph scenario checks the Visual Editor (VE), Document 
 
 Before writing code, record:
 
-1. Unique test ID, readable name and automation method name. The catalog currently ends at TC_40; allocate the next unused ID and check global method-name uniqueness. Choose the standard module package, numbered class pair and the two required groups from the manual-sheet priority.
+1. Unique test ID, readable name and automation method name. The catalog currently ends at TC_41; allocate the next unused ID and check global method-name uniqueness. Choose the standard module package, numbered class pair and the two required groups from the manual-sheet priority.
 2. Preconditions: project, document allocation, permissions, original text and tracked-change state.
 3. Exact interaction: single click, double click, caret placement, Enter or toolbar action.
 4. Observable expected result and where to verify it: VE, DS, right panel or CV.
@@ -144,7 +144,7 @@ Read a result once after waiting, store it in a local variable, then use that va
 <Logger name="d_loginpage" level="debug" />
 ```
 
-All 40 application tests have their own class logger and explicit start/result/assertion/finish logs. Action and cleanup steps log before and after completion. Shared HomePage logs navigation without credential values. Page Objects log native input and toolbar commands; test methods log explicit frame entry/restoration. Central report listeners log test and setup/cleanup failures at ERROR. Successful finish messages appear after assertions and required cleanup, never from a finally block.
+All 41 application tests have their own class logger and explicit start/result/assertion/finish logs. Action and cleanup steps log before and after completion. Shared HomePage logs navigation without credential values. Page Objects log native input and toolbar commands; test methods log explicit frame entry/restoration. Central report listeners log test and setup/cleanup failures at ERROR. Successful finish messages appear after assertions and required cleanup, never from a finally block.
 
 The same INFO/DEBUG messages appear in the terminal and `logs/Automation.log`. Add a matching DEBUG package logger when introducing a new feature package. The legacy `debug=yes` flag controls only BasePage's optional debug helper; it is not required for the explicit test/page logs. Read results once into local variables and reuse them in logs and assertions.
 

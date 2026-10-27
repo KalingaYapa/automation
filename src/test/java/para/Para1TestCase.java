@@ -57,6 +57,65 @@ public class Para1TestCase extends BaseClass {
     private static final String STARTING_TEST_MSG = "Starting test: {}";
     private static final String FINISHED_TEST_MSG = "Finished test: {} - PASSED";
 
+    @Test(enabled = true, groups = { "Para", "P2-Para" },
+            description = "TC_41 | Verify paragraph selection using Document Structure (manual TC-018)")
+    public void verifyDocumentStructureParagraphSelection() {
+        logger.info(STARTING_TEST_MSG, "verifyDocumentStructureParagraphSelection");
+        logger.debug(CALLING_LOGIN_AND_SEARCH_FILE_EDIT_MSG);
+        ReusableMethods.loginAndSearchFileClickEdit();
+        logger.debug(LOG_LOGIN_AND_SEARCH_FILE);
+        logger.debug(INITIALISING_PARAPAGEOBJECTS1_PAGE_OBJECT_MSG);
+        ParaPageObjects1 p = new ParaPageObjects1(getDriver());
+        logger.debug(PAGE_OBJECT_INITIALISED_MSG);
+        try {
+            logger.debug(SWITCHING_TO_EDITOR_FRAME_MSG);
+            getDriver().switchTo().frame(p.getEditorFrame());
+            logger.debug(LOG_SWITCHED_TO_EDITOR_FRAME);
+            int paragraphCount = p.getParagraphCountInVe();
+            logger.info("Paragraph count in VE: {}", paragraphCount);
+            logger.debug("Asserting the document contains multiple paragraphs");
+            Assert.assertTrue(paragraphCount > 1, "The document must contain multiple paragraphs");
+            logger.debug("Multiple-paragraph precondition passed; selecting the initial heading");
+            p.clickInitialHeadingInVe();
+            logger.debug("Initial heading selected");
+            logger.debug(SWITCHING_TO_DEFAULT_CONTENT_MSG);
+            getDriver().switchTo().defaultContent();
+            logger.debug(LOG_SWITCH_DEFAULT_CONTENT);
+            p.waitForSelectedElementType("heading");
+            String initialType = p.getSelectedElementType();
+            logger.info("Initial Selected Element: {}", initialType);
+            logger.debug("Asserting the initial selection is a heading");
+            Assert.assertEquals(initialType, "heading", "Establish a different element before clicking DS");
+            logger.debug("Initial selection assertion passed; locating a visible DS paragraph");
+            String expectedReference = p.getVisibleStructureParagraphReference();
+            logger.info("Target Document Structure paragraph reference: {}", expectedReference);
+            logger.debug("Clicking the target paragraph in Document Structure");
+            p.clickParagraphInDs(expectedReference);
+            logger.debug("Document Structure paragraph clicked; waiting for Selected Element");
+            p.waitForSelectedElementType("p");
+            String selectedType = p.getSelectedElementType();
+            logger.info("Selected Element after Document Structure click: {}", selectedType);
+            logger.debug("Asserting Selected Element displays p");
+            Assert.assertEquals(selectedType, "p", "DS paragraph selection must display p in Selected Element");
+            logger.debug("Selected Element assertion passed");
+            logger.debug(SWITCHING_TO_EDITOR_FRAME_MSG);
+            getDriver().switchTo().frame(p.getEditorFrame());
+            logger.debug(LOG_SWITCHED_TO_EDITOR_FRAME);
+            String actualReference = p.getSelectedParagraphReferenceInVe();
+            logger.info("Highlighted VE paragraph reference: expected={}, actual={}",
+                    expectedReference, actualReference);
+            logger.debug("Asserting the highlighted paragraph containing the selection matches the DS row");
+            Assert.assertEquals(actualReference, expectedReference,
+                    "VE selection and highlight must belong to the exact paragraph clicked in DS");
+            logger.debug("Corresponding paragraph selection assertion passed");
+        } finally {
+            logger.debug("Restoring default content after paragraph selection checks");
+            getDriver().switchTo().defaultContent();
+            logger.debug("Default content restored; selection-only test requires no Undo");
+        }
+        logger.info(FINISHED_TEST_MSG, "verifyDocumentStructureParagraphSelection");
+    }
+
     @Test(enabled = true, groups = { "Para", "P2-Para" }, description = "TC_19 | Verify Enter splits paragraph text and Undo restores it")
     public void verifyEnterIncreasesParagraphCount() {
         logger.info(STARTING_TEST_MSG, "verifyEnterIncreasesParagraphCount");

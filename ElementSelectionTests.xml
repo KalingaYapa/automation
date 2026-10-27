@@ -10,6 +10,7 @@
         <groups>
             <run>
                 <include name="DocumentEditor" />
+                <include name="Para" />
             </run>
         </groups>
         <classes>
@@ -17,6 +18,11 @@
                 <methods>
                     <include name="verifyParagraphSelectionShowsParagraphType" />
                     <include name="verifyHeadingSelectionShowsHeadingType" />
+                </methods>
+            </class>
+            <class name="para.Para1TestCase">
+                <methods>
+                    <include name="verifyDocumentStructureParagraphSelection" />
                 </methods>
             </class>
         </classes>

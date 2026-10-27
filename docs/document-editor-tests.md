@@ -1,6 +1,6 @@
 # Document editor tests
 
-The 35 editor-related cases are split between `documenteditor.DocumentEditor1TestCase` (21) and `para.Para1TestCase` (14). Their actions and checks live in the matching `DocumentEditorPageObjects1` and `ParaPageObjects1` Page Objects. All editor cases are enabled; detailed IDs, objectives and expected results are in [the catalog](test-case-catalog.md).
+The 36 editor-related cases are split between `documenteditor.DocumentEditor1TestCase` (21) and `para.Para1TestCase` (15). Their actions and checks live in the matching `DocumentEditorPageObjects1` and `ParaPageObjects1` Page Objects. All editor cases are enabled; detailed IDs, objectives and expected results are in [the catalog](test-case-catalog.md).
 
 ## Scope
 
@@ -16,13 +16,15 @@ The 35 editor-related cases are split between `documenteditor.DocumentEditor1Tes
 - TC_39 (manual TC-015): toolbar Copy/Paste between paragraphs, source preservation and Undo cleanup.
 - TC_40 (manual TC-016): Save a paragraph edit, reload and verify persistence; save the original paragraph back and reload to verify restoration.
 
+- TC_41 (manual TC-018): click a Document Structure paragraph and verify its exact VE selection/highlight and the right-panel p label.
+
 ## Setup and lifecycle
 
 Set your local sandbox username/password and appURL in `src/test/resources/config.properties`; never commit credentials. Confirm the configured IATA project, allocation path, document title, heading text/word and paragraph text match the saved sandbox document. The formatting word must initially lack explicit Bold, Italic and Underline. The paragraph must initially be outside a list. Use an editable allocation and avoid simultaneous edits to that document.
 
 `a_testbase.BaseClass` creates a fresh browser before each test and closes it after the method. Each editor/paragraph test method explicitly calls `ReusableMethods.loginAndSearchFileClickEdit()`, which uses `d_loginpage.HomePage` for login → IATA → Authoring File List → configured allocation Edit. Navigation happens once per test, including each independently selected case.
 
-Shared navigation waits for CKEditor readiness. Each test explicitly enters and leaves its editing iframe. Invisible editor markers and nested formatting spans are handled when matching text. The configured paragraph currently contains `system.By` without a space; keep configuration aligned with the actual saved text.
+Shared navigation waits for CKEditor readiness. Each test explicitly enters and leaves its editing iframe. Invisible editor markers and nested formatting spans are handled when matching text. Keep configured paragraph text aligned with the actual saved text, including spaces after punctuation.
 
 Selected Element checks read `#selectedElmName` in the main page; they do not open or modify the dropdown. They click direct plain-text words (`paragraphSelectionWord=flight`, `headingSelectionWord=Flight`) to avoid selecting nested Bold or the adjacent heading number. Bold/Italic/Underline active state requires the command's `cke_button_on` state, not merely an enabled icon. Undo/Redo wait for enabled commands before native clicks.
 
@@ -39,7 +41,7 @@ mvn clean test -DsuiteXmlFile=ClipboardTests.xml
 mvn clean test -DsuiteXmlFile=SaveTests.xml
 ```
 
-`DocumentEditor.xml` runs all 35 editor cases. The other suites select TC_13–TC_15, TC_17–TC_18 and TC_25–TC_29 respectively; ClipboardTests.xml selects TC_39 and SaveTests.xml selects TC_40. `mvn clean test` defaults to `testng.xml` and runs all 40 application cases, including the five portal cases. `Master.xml` is an equivalent compatibility suite.
+`DocumentEditor.xml` runs all 36 editor cases. The other suites select TC_13–TC_15, TC_17–TC_18 plus TC_41, and TC_25–TC_29 respectively; ClipboardTests.xml selects TC_39 and SaveTests.xml selects TC_40. `mvn clean test` defaults to `testng.xml` and runs all 41 application cases, including the five portal cases. `Master.xml` is an equivalent compatibility suite.
 
 Editor-level groups are `DocumentEditor` plus `P2-DocumentEditor` for High or `P3-DocumentEditor` for Medium; paragraph groups are `Para` and `P2-Para`. All suites use the standard `RetryMultipleFailedTestcases` test block and updated class references. Retry remains attached by the framework listener, with retry limit zero by default.
 

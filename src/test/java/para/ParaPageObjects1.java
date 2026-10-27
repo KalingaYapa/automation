@@ -3,6 +3,7 @@ package para;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.interactions.Actions;
@@ -21,6 +22,9 @@ public class ParaPageObjects1 extends BasePage {
     private List<WebElement> editorFrames;
     @FindBy(xpath = "//div[@data-element='p']")
     private List<WebElement> paragraphsInVe;
+    @FindBy(xpath = "//*[@id='content-scroll']//li[@name='p']")
+    private List<WebElement> structureParagraphs;
+
     @FindBy(xpath = "//a[contains(concat(' ',normalize-space(@class),' '),' cke_button__bold ')]")
     private WebElement boldButton;
     @FindBy(xpath = "//a[contains(concat(' ',normalize-space(@class),' '),' cke_button__italic ')]")
@@ -68,6 +72,57 @@ public class ParaPageObjects1 extends BasePage {
     public WebElement getEditorFrame() {
         return mywait.until(driver -> editorFrames.stream().filter(WebElement::isDisplayed)
                 .findFirst().orElse(null));
+    }
+
+    public int getParagraphCountInVe() {
+        return paragraphsInVe.size();
+    }
+
+    public void clickInitialHeadingInVe() {
+        logger.debug("Clicking the heading to establish a different initial selection");
+        editor.clickTargetHeading();
+        logger.debug("Clicked the initial heading");
+    }
+
+    public void waitForSelectedElementType(String expected) {
+        editor.waitForSelectedElementType(expected);
+    }
+
+    public String getSelectedElementType() {
+        return editor.getSelectedElementType();
+    }
+
+    public String getVisibleStructureParagraphReference() {
+        return mywait.withMessage("Document Structure must contain a visible paragraph row")
+                .until(driver -> structureParagraphs.stream().filter(WebElement::isDisplayed)
+                        .map(row -> row.getAttribute("id"))
+                        .filter(reference -> reference != null && !reference.isBlank())
+                        .findFirst().orElse(null));
+    }
+
+    public void clickParagraphInDs(String reference) {
+        WebElement row = mywait.until(driver -> structureParagraphs.stream()
+                .filter(WebElement::isDisplayed)
+                .filter(element -> reference.equals(element.getAttribute("id")))
+                .findFirst().orElse(null));
+        logger.debug("Clicking Document Structure paragraph with reference {}", reference);
+        elementClick(row.findElement(By.xpath(
+                ".//span[contains(concat(' ',normalize-space(@class),' '),' contentBlockListItemName ')]")));
+        logger.debug("Clicked Document Structure paragraph with reference {}", reference);
+    }
+
+    /** Read selection/highlight state only; never move the caret to make the check pass. */
+    public String getSelectedParagraphReferenceInVe() {
+        return mywait.withMessage("The DS-selected paragraph must be highlighted and contain the editor selection")
+                .until(driver -> (String) js.executeScript("""
+                    const selection = window.getSelection();
+                    if (!selection || !selection.rangeCount) return null;
+                    const paragraph = Array.from(document.querySelectorAll('[data-element="p"]'))
+                        .find(element => element.classList.contains('element-tag-color')
+                            && element.contains(selection.anchorNode)
+                            && element.contains(selection.focusNode));
+                    return paragraph ? paragraph.getAttribute('inno_ref') : null;
+                    """));
     }
 
     private WebElement getTargetParagraph() {

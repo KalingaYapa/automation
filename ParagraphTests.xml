@@ -16,6 +16,7 @@
         <classes>
             <class name="para.Para1TestCase">
                 <methods>
+                    <include name="verifyDocumentStructureParagraphSelection" />
                     <include name="verifyEnterIncreasesParagraphCount" />
                     <include name="verifyEnterAtParagraphBeginning" />
                     <include name="verifyEnterAtParagraphEnd" />
